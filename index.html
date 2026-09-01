@@ -645,6 +645,15 @@
       <div class="option-row" id="accentRow"></div>
     </div>
 
+    <div class="settings-block">
+      <h3 class="settings-h3">New-recipe alerts</h3>
+      <p class="settings-sub">The "New recipe added" flashes are remembered per device — once you open Updates here, this device stops flashing that batch. If this device seems out of sync with another, use this to re-show every current recipe as new here.</p>
+      <button class="btn" id="resetNewBtn" style="max-width:260px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+        Show all as new again
+      </button>
+    </div>
+
     <p class="footer-note" style="margin-top:30px;">Kitchen Atlas by Vipin — your settings are saved on this device only.</p>
   </div>
 
@@ -769,7 +778,7 @@
     legume:["legume","legumes","lentil","lentils","dal","chickpea","chickpeas","bean","beans","sprout","sprouts","tofu"],
     veg:["veg","veggie","veggies","vegetable","vegetables","vegetarian","plant-based","salad"]
   };
-  var APP_VERSION = "1.19";
+  var APP_VERSION = "1.20";
   var CURRENT_BATCH = 8;
   var UPDATES = [
     {batch:8, date:"1 Sep 2026, 4:10 PM", title:"Kenya expanded — meat, corn and kale dishes", body:"Two new Kenya chefs: Irio (mashed corn, peas, potatoes and greens) from Mayuri Patel, and a full Kenyan plate — Beef Stew, Ugali and Sukuma — from Samson Wagacha (Dinner DeeAs)."},
@@ -790,15 +799,33 @@
   function loadOpened(){ try{ return JSON.parse(localStorage.getItem(OPENED_KEY) || "[]"); }catch(e){ return []; } }
   function persistOpened(list){ try{ localStorage.setItem(OPENED_KEY, JSON.stringify(list)); }catch(e){} }
   var openedIds = loadOpened();
+  var REGION_SEEN_KEY = "kitchenatlas.regionSeenBatch.v1";
+  function loadRegionSeen(){ try{ return JSON.parse(localStorage.getItem(REGION_SEEN_KEY) || "{}"); }catch(e){ return {}; } }
+  function persistRegionSeen(obj){ try{ localStorage.setItem(REGION_SEEN_KEY, JSON.stringify(obj)); }catch(e){} }
+  var regionSeenBatch = loadRegionSeen();
   function isVideoNew(video){
-    return (video.batch||1) > seenBatch && openedIds.indexOf(video.id) === -1;
+    // Note: intentionally does NOT check openedIds — merely previewing/playing a
+    // video (which happens a lot while testing) used to silently kill its own
+    // "new" flash, which is what made mobile (heavily tapped-through) and
+    // desktop (rarely tapped) drift out of sync. The only thing that clears
+    // "new" now is bumping seenBatch (opening the Updates panel).
+    return (video.batch||1) > seenBatch;
   }
   function regionHasNew(region, mode){
+    // A region tile stops flashing once you've visited that region and seen
+    // its new recipes for yourself — markRegionSeen() records that visit.
+    // The video cards inside still flash (isVideoNew alone) so you can tell
+    // exactly which ones are new while you're actually looking at them.
+    var seenForRegion = regionSeenBatch[region.id] || 0;
     return region.chefs.some(function(c){
       return c.videos.some(function(v){
-        return isVideoNew(v) && (mode === undefined || videoMatchesMode(v, mode));
+        return isVideoNew(v) && (v.batch||1) > seenForRegion && (mode === undefined || videoMatchesMode(v, mode));
       });
     });
+  }
+  function markRegionSeen(regionId){
+    regionSeenBatch[regionId] = CURRENT_BATCH;
+    persistRegionSeen(regionSeenBatch);
   }
   var TAG_META = {
     "low-carb":  {label:"Low-carb",     color:"var(--saffron)"},
@@ -1067,6 +1094,7 @@
     state.activeChef = null;
     state.view = "region";
     renderRegion();
+    markRegionSeen(regionId);
     switchView("region");
     window.scrollTo({top:0, behavior:"instant"});
   }
@@ -1502,6 +1530,23 @@
     var versionEl = document.getElementById("appVersion");
     if(versionEl) versionEl.textContent = "· v" + APP_VERSION;
     initRefreshControl();
+    initResetNewControl();
+  }
+
+  function initResetNewControl(){
+    var btn = document.getElementById("resetNewBtn");
+    if(!btn) return;
+    btn.addEventListener("click", function(){
+      seenBatch = 1;
+      setSeenBatch(seenBatch);
+      regionSeenBatch = {};
+      persistRegionSeen(regionSeenBatch);
+      if(state.view === "region") renderRegion(); else renderHome();
+      initUpdatesBadge();
+      var original = btn.innerHTML;
+      btn.innerHTML = "Done — everything shows as new again";
+      setTimeout(function(){ btn.innerHTML = original; }, 2200);
+    });
   }
 
   function initRefreshControl(){
