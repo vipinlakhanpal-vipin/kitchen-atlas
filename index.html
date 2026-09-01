@@ -149,8 +149,8 @@
   .brand-name .word-kitchen{font-family:'Nunito', sans-serif; font-weight:800; color:var(--text);}
   .brand-name em{font-family:'Nunito', sans-serif; font-style:normal; font-weight:800; color:var(--chili); margin-left:2px;}
   .brand-by{
-    font-family:'Nunito', sans-serif; font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase;
-    color:var(--text-soft); margin-top:1px; display:flex; align-items:center; gap:5px;
+    font-family:'Nunito', sans-serif; font-size:11.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--text); margin-top:2px; display:flex; align-items:center; gap:5px;
   }
   .refresh-btn{
     position:relative; width:18px; height:18px; padding:0; border:none; border-radius:50%;
@@ -769,7 +769,7 @@
     legume:["legume","legumes","lentil","lentils","dal","chickpea","chickpeas","bean","beans","sprout","sprouts","tofu"],
     veg:["veg","veggie","veggies","vegetable","vegetables","vegetarian","plant-based","salad"]
   };
-  var APP_VERSION = "1.17";
+  var APP_VERSION = "1.19";
   var CURRENT_BATCH = 8;
   var UPDATES = [
     {batch:8, date:"1 Sep 2026, 4:10 PM", title:"Kenya expanded — meat, corn and kale dishes", body:"Two new Kenya chefs: Irio (mashed corn, peas, potatoes and greens) from Mayuri Patel, and a full Kenyan plate — Beef Stew, Ugali and Sukuma — from Samson Wagacha (Dinner DeeAs)."},
@@ -793,8 +793,12 @@
   function isVideoNew(video){
     return (video.batch||1) > seenBatch && openedIds.indexOf(video.id) === -1;
   }
-  function regionHasNew(region){
-    return region.chefs.some(function(c){ return c.videos.some(isVideoNew); });
+  function regionHasNew(region, mode){
+    return region.chefs.some(function(c){
+      return c.videos.some(function(v){
+        return isVideoNew(v) && (mode === undefined || videoMatchesMode(v, mode));
+      });
+    });
   }
   var TAG_META = {
     "low-carb":  {label:"Low-carb",     color:"var(--saffron)"},
@@ -1041,7 +1045,7 @@
 
     els.regionGrid.innerHTML = visible.map(function(r){
       var totalVideos = r.chefs.reduce(function(s,c){return s + c.videos.length;}, 0);
-      var hasNew = regionHasNew(r);
+      var hasNew = regionHasNew(r, state.mode);
       var newFlash = hasNew ? '<span class="new-flash"><span class="flash-dot"></span>New recipe added</span>' : "";
       var grad = REGION_GRADIENTS[r.id];
       return '<button class="region-tile'+(hasNew ? ' has-new' : '')+'" style="--tile-color:'+REGION_COLORS[r.id]+';--tile-a:'+grad[0]+';--tile-b:'+grad[1]+'" data-region="'+r.id+'">'+
