@@ -220,15 +220,19 @@
   .search-box input::placeholder{color:var(--text-soft);}
 
   /* ---------- Filter chips ---------- */
-  .filter-row{display:flex; gap:8px; overflow-x:auto; padding:16px 0 4px; scrollbar-width:none;}
-  .filter-row::-webkit-scrollbar{display:none;}
+  .filter-row{display:flex; flex-wrap:wrap; gap:6px; padding:14px 0 4px;}
   .chip{
-    flex-shrink:0; border:1px solid var(--line); background:var(--card); color:var(--text-soft);
-    padding:9px 15px; border-radius:99px; font-size:14.5px; font-weight:700; cursor:pointer;
-    display:flex; align-items:center; gap:6px; white-space:nowrap; transition:transform .15s ease;
+    flex-shrink:0; border:1px solid transparent; background:var(--card); color:var(--text-soft);
+    padding:7px 12px; border-radius:99px; font-size:12px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; white-space:nowrap; transition:transform .15s ease;
   }
-  .chip .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .chip[style*="--chip-c"]{
+    background:color-mix(in srgb, var(--chip-c) 16%, var(--card));
+    color:color-mix(in srgb, var(--chip-c) 78%, var(--text));
+    border-color:color-mix(in srgb, var(--chip-c) 30%, var(--line));
+  }
   .chip.active{background:var(--ink); color:var(--fog); border-color:var(--ink);}
+  .chip[style*="--chip-c"].active{background:var(--chip-c); color:#fff; border-color:var(--chip-c);}
   .chip:active{transform:scale(0.96);}
 
   /* ---------- Region grid ---------- */
@@ -928,7 +932,7 @@
     legume:["legume","legumes","lentil","lentils","dal","chickpea","chickpeas","bean","beans","sprout","sprouts","tofu"],
     veg:["veg","veggie","veggies","vegetable","vegetables","vegetarian","plant-based","salad"]
   };
-  var APP_VERSION = "1.24";
+  var APP_VERSION = "1.25";
   var CURRENT_BATCH = 10;
   var UPDATES = [
     {batch:10, date:"2 Sep 2026, 8:30 PM", title:"New cooking-style categories: Grilled, Baked, Curries, Fried", body:"Healthy Picks now has Grilled and Baked alongside Low-carb, Complex-carb, Veg-forward, Seafood and Lean meat. Rich & Indulgent now has Curries and Fried alongside the original Rich & Indulgent tag. New recipes going forward will be tagged into these cooking-style categories."},
@@ -1153,8 +1157,8 @@
     );
     container.innerHTML = tags.map(function(t){
       var active = state.activeTag === t.key ? "active" : "";
-      var dot = t.color ? '<span class="dot" style="background:'+t.color+'"></span>' : "";
-      return '<button class="chip '+active+'" data-tag="'+t.key+'">'+dot+t.label+'</button>';
+      var style = t.color ? ' style="--chip-c:'+t.color+'"' : "";
+      return '<button class="chip '+active+'" data-tag="'+t.key+'"'+style+'>'+t.label+'</button>';
     }).join("");
     container.querySelectorAll(".chip").forEach(function(btn){
       btn.addEventListener("click", function(){
