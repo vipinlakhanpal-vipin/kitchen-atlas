@@ -928,9 +928,10 @@
     legume:["legume","legumes","lentil","lentils","dal","chickpea","chickpeas","bean","beans","sprout","sprouts","tofu"],
     veg:["veg","veggie","veggies","vegetable","vegetables","vegetarian","plant-based","salad"]
   };
-  var APP_VERSION = "1.23";
+  var APP_VERSION = "1.24";
   var CURRENT_BATCH = 10;
   var UPDATES = [
+    {batch:10, date:"2 Sep 2026, 8:30 PM", title:"New cooking-style categories: Grilled, Baked, Curries, Fried", body:"Healthy Picks now has Grilled and Baked alongside Low-carb, Complex-carb, Veg-forward, Seafood and Lean meat. Rich & Indulgent now has Curries and Fried alongside the original Rich & Indulgent tag. New recipes going forward will be tagged into these cooking-style categories."},
     {batch:10, date:"2 Sep 2026, 6:00 PM", title:"16 new countries, plus continent tabs", body:"Home now has continent tabs (Americas, Europe, Middle East, Africa, Asia, Oceania). New countries: Australia (Pavlova), New Zealand (Pikelets), UK (Fish & Chips), Scotland (Cullen Skink), Ireland (Irish Stew), Switzerland (Rösti), Bosnia (Burek), Slovenia (Potica), Syria (Kibbeh), Jordan (Mansaf), UAE (Chicken Machboos), Saudi Arabia (Kabsa), Morocco (Chicken Tagine), Croatia (Cevapi) and Portugal (Piri Piri Chicken) join Palestine in the Middle East tab. Also added: a written-recipe link icon on cards where one exists, and a new Lamb protein filter."},
     {batch:9, date:"2 Sep 2026, 10:00 AM", title:"10 new beef & chicken recipes, worldwide", body:"Korea: LA Galbi (Korean BBQ Beef Short Ribs). Italy: Short Rib Ragu. Mexico: Backyard Carne Asada. Vietnam: Pho Bo. China: Beef and Broccoli. Lebanon: Beef Kafta. Japan: Chicken Karaage. Philippines: Killer Chicken Adobo. Greece: Chicken Souvlaki. Spain: Spanish Garlic Chicken."},
     {batch:8, date:"1 Sep 2026, 4:10 PM", title:"Kenya expanded — meat, corn and kale dishes", body:"Two new Kenya chefs: Irio (mashed corn, peas, potatoes and greens) from Mayuri Patel, and a full Kenyan plate — Beef Stew, Ugali and Sukuma — from Samson Wagacha (Dinner DeeAs)."},
@@ -980,12 +981,16 @@
     persistRegionSeen(regionSeenBatch);
   }
   var TAG_META = {
-    "low-carb":  {label:"Low-carb",     color:"var(--saffron)"},
-    "complex-carb": {label:"Complex-carb", color:"var(--cardamom)"},
-    "veg":       {label:"Veg-forward",  color:"var(--pistachio)"},
-    "seafood":   {label:"Seafood",      color:"var(--aegean)"},
-    "meat":      {label:"Lean meat",    color:"var(--chili)"},
-    "rich":      {label:"Rich & Indulgent", color:"var(--indulgent)"}
+    "low-carb":  {label:"Low-carb",     color:"var(--saffron)", mode:"healthy"},
+    "complex-carb": {label:"Complex-carb", color:"var(--cardamom)", mode:"healthy"},
+    "veg":       {label:"Veg-forward",  color:"var(--pistachio)", mode:"healthy"},
+    "seafood":   {label:"Seafood",      color:"var(--aegean)", mode:"healthy"},
+    "meat":      {label:"Lean meat",    color:"var(--chili)", mode:"healthy"},
+    "grilled":   {label:"Grilled",      color:"var(--chili)", mode:"healthy"},
+    "baked":     {label:"Baked",        color:"var(--cardamom)", mode:"healthy"},
+    "rich":      {label:"Rich & Indulgent", color:"var(--indulgent)", mode:"rich"},
+    "curry":     {label:"Curries",      color:"var(--indulgent)", mode:"rich"},
+    "fry":       {label:"Fried",        color:"var(--saffron)", mode:"rich"}
   };
   var GLYPHS = {
     "low-carb": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C7 6 4 10 4 14a8 8 0 0 0 16 0c0-4-3-8-8-12Z"/></svg>',
@@ -993,7 +998,11 @@
     "veg": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c5 0 8 4 8 9s-4 9-8 9-8-4-8-9 3-9 8-9Z"/></svg>',
     "seafood": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 12c4-5 9-7 14-7 4 0 6 3 6 3s-2 3-6 3c-5 0-10-2-14 1Zm14-4 4-4M16 15l4 4"/></svg>',
     "meat": '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="10" cy="10" r="7"/><path d="M15 15 20 20"/></svg>',
-    "rich": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l3 3 6-7 6 7 3-3-2 11H5L3 8Z"/></svg>'
+    "grilled": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 10h16M4 14h16M6 10v8M10 10v8M14 10v8M18 10v8" stroke="currentColor" stroke-width="2" fill="none"/></svg>',
+    "baked": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9a8 8 0 0 1 16 0v9H4V9Z"/></svg>',
+    "rich": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l3 3 6-7 6 7 3-3-2 11H5L3 8Z"/></svg>',
+    "curry": '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12a8 4 0 0 0 16 0v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6Z"/></svg>',
+    "fry": '<svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="15" rx="9" ry="4"/><path d="M6 14c1-4 3-9 6-11 3 2 5 7 6 11" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
   };
 
   var STORAGE_KEY = "kitchenatlas.saved.v1";
@@ -1137,9 +1146,9 @@
 
   function renderTagFilters(container){
     if(!container) return;
-    container.hidden = (state.mode === "rich");
+    container.hidden = false;
     var tags = [{key:"all", label:"All dishes"}].concat(
-      Object.keys(TAG_META).filter(function(k){return k !== "rich";})
+      Object.keys(TAG_META).filter(function(k){return TAG_META[k].mode === state.mode;})
         .map(function(k){return {key:k, label:TAG_META[k].label, color:TAG_META[k].color};})
     );
     container.innerHTML = tags.map(function(t){
@@ -1201,7 +1210,9 @@
   }
 
   function videoMatchesMode(video, mode){
-    return mode === "rich" ? video.tag === "rich" : video.tag !== "rich";
+    var tagMeta = TAG_META[video.tag];
+    var tagMode = tagMeta ? tagMeta.mode : "healthy";
+    return tagMode === mode;
   }
 
   function regionHasMode(region, mode){
