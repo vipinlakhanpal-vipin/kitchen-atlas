@@ -416,6 +416,26 @@
   .note-actions{display:flex; gap:10px; margin-top:14px;}
   .note-actions .btn{flex:1;}
 
+  /* ---------- Add-a-recipe / add-a-region form ---------- */
+  .add-recipe-sheet{max-height:85vh; overflow-y:auto;}
+  .field-label{font-size:12.5px; font-weight:800; color:var(--text-soft); margin:14px 0 5px; display:block;}
+  .field-label:first-of-type{margin-top:2px;}
+  .field-input, .field-select{
+    width:100%; border-radius:12px; border:1px solid var(--line); background:var(--fog);
+    color:var(--text); font-family:'Nunito', sans-serif; font-size:14px; padding:10px 12px;
+  }
+  .field-row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .form-msg{font-size:13px; font-weight:700; margin-top:12px; display:none;}
+  .form-msg.show{display:block;}
+  .form-msg.err{color:var(--chili);}
+  .form-msg.ok{color:var(--pistachio);}
+  .add-link-btn{
+    display:inline-flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer;
+    color:var(--chili); font-family:'Nunito', sans-serif; font-weight:800; font-size:13.5px; padding:8px 2px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .add-link-btn svg{width:15px;height:15px;}
+
   .recipe-body{padding:19px 11px 12px; display:flex; flex-direction:column; gap:4px; flex:1;}
   .recipe-title{font-size:14.5px; font-weight:700; line-height:1.3; color:var(--text);}
   .recipe-chef{font-size:12.5px; color:var(--text-soft); font-weight:700;}
@@ -586,6 +606,10 @@
       <div class="filter-row" id="tagFilterRowRegion"></div>
     </div>
     <div class="chef-row" id="chefRow"></div>
+    <button class="add-link-btn" id="regionAddRecipeBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+      Add your own recipe to this country
+    </button>
     <div class="recipe-grid" id="recipeGrid"></div>
   </div>
 
@@ -622,6 +646,12 @@
       </button>
     </div>
     <div class="section-label"><h2>Settings</h2></div>
+
+    <div class="settings-block">
+      <h3 class="settings-h3">Your recipes</h3>
+      <p class="settings-sub">Add your own recipe to any country, or start a brand new country with its own tile color.</p>
+      <button class="btn primary" id="settingsAddRecipeBtn" style="max-width:220px;">+ Add a recipe</button>
+    </div>
 
     <div class="settings-block">
       <h3 class="settings-h3">Appearance</h3>
@@ -736,11 +766,113 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="addRecipeBackdrop">
+  <div class="note-sheet add-recipe-sheet" role="dialog" aria-modal="true" aria-label="Add a recipe">
+    <h3>Add a recipe</h3>
+    <p class="note-video-title">Saved on this device only — add your own video to an existing country, or start a brand new one.</p>
+
+    <label class="field-label" for="arRegionSelect">Country</label>
+    <select class="field-select" id="arRegionSelect"></select>
+
+    <div id="arNewRegionFields" hidden>
+      <label class="field-label" for="arRegionName">New country name</label>
+      <input class="field-input" id="arRegionName" type="text" placeholder="e.g. Peru">
+      <label class="field-label" for="arRegionFlag">Flag (auto-detected from the name above — edit if needed)</label>
+      <input class="field-input" id="arRegionFlag" type="text" placeholder="🍽️" maxlength="8">
+      <label class="field-label" for="arRegionTagline">Short tagline</label>
+      <input class="field-input" id="arRegionTagline" type="text" placeholder="e.g. Ceviche, potatoes &amp; Andean grains">
+    </div>
+
+    <div class="field-row2">
+      <div>
+        <label class="field-label" for="arChefName">Chef / cook name</label>
+        <input class="field-input" id="arChefName" type="text" placeholder="e.g. Maria Gomez">
+      </div>
+      <div>
+        <label class="field-label" for="arChefChannel">Channel name</label>
+        <input class="field-input" id="arChefChannel" type="text" placeholder="e.g. Maria's Kitchen">
+      </div>
+    </div>
+
+    <label class="field-label" for="arVideoUrl">YouTube link or video ID</label>
+    <input class="field-input" id="arVideoUrl" type="text" placeholder="https://youtube.com/watch?v=...">
+
+    <label class="field-label" for="arTitle">Recipe title</label>
+    <input class="field-input" id="arTitle" type="text" placeholder="e.g. Beef Short Ribs">
+
+    <label class="field-label" for="arNote">Short note</label>
+    <input class="field-input" id="arNote" type="text" placeholder="One line about the dish">
+
+    <div class="field-row2">
+      <div>
+        <label class="field-label" for="arProtein">Main protein</label>
+        <select class="field-select" id="arProtein"></select>
+      </div>
+      <div>
+        <label class="field-label" for="arTag">Category</label>
+        <select class="field-select" id="arTag"></select>
+      </div>
+    </div>
+
+    <p class="form-msg" id="arMsg"></p>
+
+    <div class="note-actions">
+      <button class="btn" id="arCancelBtn" type="button">Cancel</button>
+      <button class="btn primary" id="arSaveBtn" type="button">Add recipe</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
 
-  var DATA = {"regions": [{"id": "india", "name": "India", "flag": "🇮🇳", "tagline": "Dal, millets, sprouts & tandoori — the healthy way", "chefs": [{"name": "Sanjeev Kapoor", "channel": "Sanjeev Kapoor Khazana", "videos": [{"id": "QUXe84xQZ5s", "title": "Dal Tadka", "note": "Classic tempered lentils, high-protein & fiber", "tag": "complex-carb", "batch": 1, "protein": "legume"}, {"id": "DyIeuTuAoZM", "title": "Ragi Sankati (Millet Khazana)", "note": "Finger-millet dish, complex-carb + fiber", "tag": "complex-carb", "batch": 2, "protein": "veg"}, {"id": "lFZyNDNfUvU", "title": "Shahi Paneer | Sanjeev Kapoor Khazana", "note": "Rich cashew-cream paneer curry, Mughlai royal dish", "tag": "rich", "protein": "veg", "batch": 3}]}, {"name": "Ranveer Brar", "channel": "Chef Ranveer Brar", "videos": [{"id": "tp0BmholJic", "title": "Tandoori Broccoli, No Oven No Tandoor", "note": "Grilled vegetable, low-carb", "tag": "veg", "batch": 2, "protein": "veg"}, {"id": "N4Vldh095Q0", "title": "Methi Dal Tadka (No Onion No Garlic)", "note": "Fenugreek-lentil dal, fiber-rich", "tag": "complex-carb", "batch": 2, "protein": "legume"}, {"id": "b7yuoRk227Y", "title": "Butter Chicken Recipe | Butter Chicken at home", "note": "Creamy tomato-butter gravy, restaurant classic", "tag": "rich", "protein": "chicken", "batch": 3}]}, {"name": "Kunal Kapur", "channel": "Kunal Kapur", "videos": [{"id": "K843BPF6OV0", "title": "Dal Moth Chaat, Hi-Protein Salad", "note": "Sprouted moth beans, high-protein/fiber", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "VXZg5UiTFmE", "title": "Multi-Millet Pancakes", "note": "Millet dosa mix, complex-carb breakfast", "tag": "complex-carb", "batch": 2, "protein": "veg"}]}, {"name": "Sanjyot Keer", "channel": "Your Food Lab", "videos": [{"id": "lI9hUernvQ8", "title": "Dahi Waala Paneer (No Onion No Garlic)", "note": "Yogurt-based paneer masala, lean protein", "tag": "veg", "batch": 2, "protein": "veg"}, {"id": "2V2n1UK3LLA", "title": "Restaurant Style Dal Khichdi", "note": "Dal + grain comfort bowl, legume-forward", "tag": "complex-carb", "batch": 2, "protein": "legume"}]}, {"name": "Kabita Singh", "channel": "Kabita's Kitchen", "videos": [{"id": "yEMwra2ZjPE", "title": "Healthy Veg Thali, Just 2 Spoons of Oil", "note": "Low-oil vegetable thali", "tag": "veg", "batch": 2, "protein": "veg"}, {"id": "Xsie55XKuxg", "title": "Lahsooni Dal Tadka", "note": "Garlic dal tadka, legume/fiber", "tag": "complex-carb", "batch": 2, "protein": "legume"}, {"id": "RG9JloCcHck", "title": "Chicken Dum Biryani, Hyderabadi Style", "note": "Layered, slow-cooked festive rice-and-chicken feast", "tag": "rich", "protein": "chicken", "batch": 3}]}, {"name": "Hebbar's Kitchen", "channel": "Hebbar's Kitchen", "videos": [{"id": "bFaroURuPV8", "title": "Sprout Salad, Weight-Loss Recipe", "note": "Sprouted moong, fiber/protein", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "I6DgNRcVN84", "title": "Instant Ragi Dosa", "note": "Finger millet dosa, complex-carb", "tag": "complex-carb", "batch": 2, "protein": "veg"}]}, {"name": "Archana Doshi", "channel": "Archana's Kitchen", "videos": [{"id": "ShZ3hJujn-Y", "title": "Dal Palak, High-Protein Recipe", "note": "Spinach + dal, veg-forward high-protein", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "AanaaqmsXVE", "title": "Tomato Quinoa (Masala Quinoa)", "note": "Quinoa-based, complex-carb & protein", "tag": "complex-carb", "batch": 2, "protein": "veg"}]}, {"name": "Bhavna Patel", "channel": "Bhavna's Kitchen & Living", "videos": [{"id": "LYURWQzKOzk", "title": "Sprouted Mung Bean Salad", "note": "Fiber & protein-rich sprout salad", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "5MAj8xhHY7s", "title": "Spicy Brussels Sprouts, Indian Style", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 2, "protein": "veg"}]}, {"name": "Harpal Singh Sokhi", "channel": "Chef Harpal Singh", "videos": [{"id": "s9HjFk7lIyg", "title": "Maah Choleyan Di Dal", "note": "Whole black-gram dal, fiber/protein", "tag": "complex-carb", "batch": 2, "protein": "legume"}, {"id": "1bQC0dJQdNM", "title": "Restaurant Style Paneer Tikka", "note": "Grilled tandoor-style paneer, low-carb protein", "tag": "low-carb", "batch": 2, "protein": "veg"}]}, {"name": "Nisa Homey", "channel": "Nisa Homey", "videos": [{"id": "lQse37xy9oQ", "title": "Kerala Chicken Curry Recipe | Kerala Recipes | Nisa Homey", "note": "Kerala-style chicken curry, lean regional protein", "tag": "meat", "protein": "chicken", "batch": 5}, {"id": "mcoPivQ7Na8", "title": "Kerala Fish Curry Recipe - Meen Curry - Kerala Recipes | Nisa Homey", "note": "Kerala fish curry, lean seafood", "tag": "seafood", "protein": "fish", "batch": 5}, {"id": "fu1uSTMHE54", "title": "Egg Roast Recipe - Easy Kerala Style Mutta Roast | Nisa Homey", "note": "Kerala-style spiced egg roast", "tag": "rich", "protein": "egg", "batch": 5}, {"id": "w9NPrbZZcYU", "title": "100% Oil Free Pressure Cooker Indian Curry Gravy Recipe - Healthy Punjabi Matar Paneer | Nisa Homey", "note": "Oil-free paneer & peas curry, Punjab style", "tag": "low-carb", "protein": "veg", "batch": 5}]}, {"name": "VahChef", "channel": "Vahchef - VahRehVah", "videos": [{"id": "NzXbURbvONg", "title": "Easy Chicken Curry With Onion Tomato Gravy - By VahChef @ VahRehVah.com", "note": "Andhra-style chicken curry with onion-tomato gravy", "tag": "meat", "protein": "chicken", "batch": 5}]}, {"name": "Bong Eats", "channel": "Bong Eats", "videos": [{"id": "JrfPmWlKJ9o", "title": "Machh'er Jhal, shorshe posto diye — Bengali fish curry recipe with mustard & poppy", "note": "West Bengal fish curry with mustard & poppy seed", "tag": "seafood", "protein": "fish", "batch": 5}]}, {"name": "MadhurasRecipe", "channel": "MadhurasRecipe Hindi", "videos": [{"id": "8ESqMMnQFAY", "title": "Misal Pav Recipe | Maharashtrian Misal Pav | Misal Tarri recipe MadhurasRecipe", "note": "Maharashtrian spiced sprouted-lentil curry", "tag": "rich", "protein": "legume", "batch": 5}]}, {"name": "Venkatesh Bhat", "channel": "Venkatesh Bhat's Idhayam Thotta Samayal", "videos": [{"id": "3NAf1UEE8E0", "title": "Venkatesh Bhat Makes Sundakkai Vathakuzhambu | Vatha Kuzhambu Recipe", "note": "Tamil Nadu tangy tamarind vegetable curry", "tag": "veg", "protein": "veg", "batch": 5}]}, {"name": "Rajshri Food", "channel": "Rajshri Food", "videos": [{"id": "vI907Peay-U", "title": "Gujarati Dhokla Recipe - How To Make Perfect Dhokla At Home - Snack Recipe by Ruchi Bharani", "note": "Steamed Gujarati fermented-rice-batter snack", "tag": "complex-carb", "protein": "veg", "batch": 5}]}, {"name": "Smita Deo", "channel": "Smita Deo", "videos": [{"id": "Eg2gTNJhM7s", "title": "Bisi Bele Bath Recipe | Authentic Karnataka-Style Step by Step Recipe", "note": "Karnataka lentil-rice-vegetable one-pot dish", "tag": "complex-carb", "protein": "legume", "batch": 5}]}]}, {"id": "usa", "name": "USA", "flag": "🇺🇸", "tagline": "Lean proteins & big veggie bowls", "chefs": [{"name": "Lisa Bryan", "channel": "Downshiftology", "videos": [{"id": "h6EaCv-lLQY", "title": "Easy Chicken Stir Fry (in 30 Minutes!)", "note": "Lean chicken breast + vegetables, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "hmodbYmLNfA", "title": "Favorite Egg Salad", "note": "High-protein, veggie-forward, no starchy carbs", "tag": "low-carb", "batch": 1, "protein": "egg"}]}, {"name": "Dani Spies", "channel": "Clean & Delicious", "videos": [{"id": "W6WwbfLxuNQ", "title": "Chopped Detox Salad", "note": "Raw-vegetable chopped salad, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "1_XXBUOCKkA", "title": "Quick Canned Salmon Salad", "note": "Lean fish protein, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}]}, {"name": "Nisha Vora", "channel": "Rainbow Plant Life", "videos": [{"id": "Wk4kr_Imq74", "title": "Mediterranean Grain Bowls with Chickpeas & Lentils", "note": "Complex-carb grains, legume-forward", "tag": "complex-carb", "batch": 1, "protein": "legume"}, {"id": "aMhUXl2vcW0", "title": "Anti-Inflammatory Chickpea Stew", "note": "One-pot, high-protein legumes", "tag": "veg", "batch": 1, "protein": "legume"}]}, {"name": "Lindsay Ostrom", "channel": "Pinch of Yum", "videos": [{"id": "-OT2_eURMQw", "title": "Salmon Burgers with Slaw", "note": "Lean fish patty + crunchy raw slaw", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "3Hwx2wYjx5g", "title": "Salmon with Basil Sauce and Tomato Salad", "note": "Pan-seared salmon, fresh tomato salad", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "kElIc--z_Hc", "title": "Garlic Basil Chicken with Tomato Butter Sauce", "note": "Skillet chicken breast, light pan sauce", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "rY1G6I-85UE", "title": "Coconut Curry Salmon", "note": "Salmon in a light coconut-curry broth", "tag": "seafood", "protein": "fish", "batch": 2}]}, {"name": "Tieghan Gerard", "channel": "Half Baked Harvest", "videos": [{"id": "Pu5uxFf7VPc", "title": "One Pot Stove Top Mac and Cheese", "note": "Ultra-creamy one-pot indulgent mac and cheese", "tag": "rich", "protein": "veg", "batch": 3}, {"id": "eD0NoxcvrzE", "title": "Easiest No-Boil Brie Mac and Cheese", "note": "Baked brie folded into mac and cheese, holiday comfort food", "tag": "rich", "protein": "veg", "batch": 3}]}]}, {"id": "mexico", "name": "Mexico", "flag": "🇲🇽", "tagline": "Grilled fish, cactus & citrus", "chefs": [{"name": "Cocina Delirante", "channel": "Cocina Delirante", "videos": [{"id": "IAzpGUmMf60", "title": "Ensaladas Saludables con Pollo", "note": "Lean chicken + salad, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "AU_qLuRucw8", "title": "Recetas Saludables con Pescado", "note": "Lean fish-forward, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "2CjDzwUHPfs", "title": "Deliciosas Recetas de Ensalada de Pollo", "note": "Chicken salad recipes, lean protein-forward", "tag": "meat", "protein": "chicken", "batch": 2}]}, {"name": "Rick Bayless", "channel": "Rick Bayless", "videos": [{"id": "8Zxwxf-wbeA", "title": "Tikin Xic: Achiote-Grilled Fish from Yucatán", "note": "Grilled lean fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "F1AgMhxFBVk", "title": "Nopales Cactus Salad", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}]}, {"name": "Pati Jinich", "channel": "Pati Jinich", "videos": [{"id": "Tx8cBXAouf4", "title": "How to Make Tortilla Soup", "note": "Vegetable- and lean-broth-based soup", "tag": "veg", "protein": "veg", "batch": 2}, {"id": "EG2xyKKs7z8", "title": "Jicama and Greens Salad", "note": "Raw vegetable salad, low-carb", "tag": "veg", "protein": "veg", "batch": 2}, {"id": "kY2VHJEQOZA", "title": "Cali-Baja Fish Tacos", "note": "Grilled lean fish preparation", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "YMmGE33ftH0", "title": "Sweet Lime Roasted Chicken with Broccolini", "note": "Roasted lean chicken with vegetables", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "ctzw9wA2YKY", "title": "The Art of Mole", "note": "Deep, complex, chocolate-chile mole sauce tradition", "tag": "rich", "protein": "chicken", "batch": 3}, {"id": "eC18-L8GC6o", "title": "Mole Verde with Pork & White Beans", "note": "Rich green mole braise with pork and beans", "tag": "rich", "protein": "pork", "batch": 3}]}]}, {"id": "greece", "name": "Greece", "flag": "🇬🇷", "tagline": "Olive oil, fresh fish & Greek classics", "chefs": [{"name": "Akis Petretzikis", "channel": "Akis Petretzikis", "videos": [{"id": "j51U-8VBsHQ", "title": "Baked Fish & Vegetables", "note": "Lean fish + roasted vegetables", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "1cMuk-oVZGM", "title": "Salt Baked Fish", "note": "Whole fish, no added fat, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "pkULmADHt4s", "title": "Chicken Salad", "note": "Lean chicken salad, Greek home cooking", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "ktjeTddGQ3E", "title": "Greek Fish Soup", "note": "Broth-based fish soup, low fat", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "P_0cA8aoOno", "title": "Pastitsio (Greek Baked Pasta)", "note": "Layered baked pasta with meat sauce and creamy béchamel", "tag": "rich", "protein": "beef", "batch": 3}]}]}, {"id": "italy", "name": "Italy", "flag": "🇮🇹", "tagline": "Pasta, vegetables & lean cured meats", "chefs": [{"name": "Vincenzo Prosperi", "channel": "Vincenzo's Plate", "videos": [{"id": "riTriHkenjs", "title": "Real Italian Caprese Salad", "note": "Vegetables + fresh mozzarella, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "ETzLGX8UFaU", "title": "Bresaola Salad, an Healthy Italian Classic", "note": "Lean cured beef + greens, low-carb", "tag": "meat", "batch": 1, "protein": "beef"}]}, {"name": "Gennaro Contaldo", "channel": "Jamie Oliver", "videos": [{"id": "SwDJi_PB-wY", "title": "Lemon Pasta", "note": "Whole-ingredient pasta, light lemon sauce", "tag": "complex-carb", "protein": "veg", "batch": 2}, {"id": "t-lCUP4tzR4", "title": "Aubergine Pasta Bake", "note": "Vegetable-forward aubergine bake", "tag": "veg", "protein": "veg", "batch": 2}]}]}, {"id": "spain", "name": "Spain", "flag": "🇪🇸", "tagline": "Legumes, chickpeas & Mediterranean staples", "chefs": [{"name": "Albert Bevia", "channel": "Spain on a Fork", "videos": [{"id": "iL7A7jmMAJA", "title": "Spanish Lentil Salad (Ensalada de Lentejas)", "note": "Legume-forward, complex-carb", "tag": "complex-carb", "batch": 1, "protein": "legume"}, {"id": "8dQsErPMZM0", "title": "Spinach Salad with Spiced Chickpeas", "note": "Legumes + leafy greens, 20 min", "tag": "veg", "batch": 1, "protein": "legume"}, {"id": "88JvhCoML1s", "title": "Classic Spanish Chickpeas and Rice (Cadiz)", "note": "Legume + whole-grain rice dish", "tag": "complex-carb", "protein": "legume", "batch": 2}, {"id": "nLQQmn-WFTA", "title": "Chickpea Salad with Tuna & Eggs", "note": "Legume salad with lean tuna/egg protein", "tag": "complex-carb", "protein": "legume", "batch": 2}, {"id": "DlH3ZNjIAmM", "title": "Spanish Lentil and Cod Stew", "note": "Lentils + lean white fish stew", "tag": "complex-carb", "protein": "fish", "batch": 2}]}]}, {"id": "lebanon", "name": "Lebanon", "flag": "🇱🇧", "tagline": "Shawarma, lentils & fresh herbs", "chefs": [{"name": "Yumna Jawad", "channel": "Feel Good Foodie", "videos": [{"id": "SDNy8zZ8urw", "title": "Lebanese Chicken Shawarma", "note": "Lean marinated chicken, low-carb without pita", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "8iEmTTaA1Wo", "title": "Loaf Pan Chicken Shawarma", "note": "Lean chicken, minimal oil", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "EdfJMTfPvFg", "title": "Chicken Lentil Soup", "note": "Chicken + lentils, broth-based", "tag": "complex-carb", "protein": "chicken", "batch": 2}, {"id": "wOlibTyLVDQ", "title": "Baklava in 10 Minutes", "note": "Honey-soaked, buttery phyllo and nut dessert", "tag": "rich", "protein": "veg", "batch": 3}]}]}, {"id": "egypt", "name": "Egypt", "flag": "🇪🇬", "tagline": "Shawarma bowls & Mediterranean-diet staples", "chefs": [{"name": "Suzy Karadsheh", "channel": "The Mediterranean Dish", "videos": [{"id": "pCtq5rK2_Ns", "title": "Chicken Shawarma Salad Bowls", "note": "Lean chicken + veg bowl, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "gkkh-yx_4Gc", "title": "Homemade Chicken Shawarma", "note": "Lean protein, vegetable-forward", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "SLJdbA3mm3Y", "title": "Za'atar Garlic Salmon", "note": "Baked salmon, Mediterranean-diet recipe", "tag": "seafood", "protein": "fish", "batch": 2}]}]}, {"id": "palestine", "name": "Palestine", "flag": "🇵🇸", "tagline": "Za'atar, lentils & home-style classics", "chefs": [{"name": "Zaatar & Zaytoun", "channel": "Zaatar and Zaytoun", "videos": [{"id": "NPCIZ8su1NQ", "title": "7 Spice & Sumac Chicken", "note": "Lean grilled chicken, low-carb", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "8iureT851ng", "title": "Lebanese Lentil Soup", "note": "Legume-based soup, low fat, quick and easy", "tag": "complex-carb", "protein": "legume", "batch": 2}]}]}, {"id": "korea", "name": "Korea", "flag": "🇰🇷", "tagline": "Bibimbap, bulgogi & fermented staples", "chefs": [{"name": "Maangchi", "channel": "Maangchi", "videos": [{"id": "6KCWzRfFyr4", "title": "Bibimbap", "note": "Vegetable-forward mixed rice, lean protein", "tag": "complex-carb", "batch": 1, "protein": "veg"}, {"id": "i1djfV9uigc", "title": "Japchae, Glass Noodles with Vegetables", "note": "Vegetable-forward, moderate carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "trqL9v7GSGw", "title": "Maangchi's Mapa Tofu", "note": "Tofu-based dish, lean plant protein", "tag": "veg", "protein": "legume", "batch": 2}, {"id": "3qBjL_HGvco", "title": "Bulgogi (Korean BBQ)", "note": "Grilled marinated lean beef, no deep-frying", "tag": "meat", "protein": "beef", "batch": 2}, {"id": "23tRGHUX3qM", "title": "Grilled Pork Belly (Samgyeopsal-gui)", "note": "Sizzling, fatty grilled Korean pork belly feast", "tag": "rich", "protein": "pork", "batch": 3}]}]}, {"id": "japan", "name": "Japan", "flag": "🇯🇵", "tagline": "Teriyaki, lean fish & quick pan dishes", "chefs": [{"name": "Namiko Chen", "channel": "Just One Cookbook", "videos": [{"id": "FrIqFGKNVdw", "title": "Teriyaki Salmon", "note": "Lean fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "6NkG4Qp0lyc", "title": "Chicken Teriyaki", "note": "Lean chicken, low-carb", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "mG4jEWAyzBk", "title": "Pan-Fried Curry Chicken", "note": "Pan-seared (not deep-fried) chicken, curry spice", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "PHuxPEUWCcw", "title": "Tonjiru (Pork and Vegetable Miso Soup)", "note": "Lean pork simmered with root vegetables in miso broth", "tag": "complex-carb", "protein": "pork", "batch": 6}]}]}, {"id": "china", "name": "China", "flag": "🇨🇳", "tagline": "Steamed fish & light home-style stir-fry", "chefs": [{"name": "Chinese Cooking Demystified", "channel": "Chinese Cooking Demystified", "videos": [{"id": "4hdpejFLkPc", "title": "Perfect Cantonese Steamed Fish", "note": "Lean fish, no frying", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "BWq7Jdmgo5o", "title": "Steamed Chicken with Mushrooms", "note": "Lean chicken + mushrooms", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "vFJDxR9N7uk", "title": "Suan Cai Yu, Sichuan Sour & Spicy Poached Fish Soup", "note": "Poached (not fried) fish in a light broth", "tag": "seafood", "protein": "fish", "batch": 2}]}, {"name": "Souped Up Recipes", "channel": "Souped Up Recipes", "videos": [{"id": "BcJKyT-ervs", "title": "15-Minute Chinese Shrimp Mushroom Tofu Soup", "note": "Shrimp + tofu + mushroom, light broth", "tag": "seafood", "protein": "fish", "batch": 2}]}]}, {"id": "thailand", "name": "Thailand", "flag": "🇹🇭", "tagline": "Herb-packed salads & fast stir-fries", "chefs": [{"name": "Marion Grasby", "channel": "Marion's Kitchen", "videos": [{"id": "4wC8WxqXW-M", "title": "Chicken Breast Stir-Fry", "note": "Lean chicken + veg stir-fry, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "d6YvsmxH0iM", "title": "Korean-Style Spicy Pork Stir-Fry", "note": "Vegetable-forward stir-fry", "tag": "meat", "batch": 1, "protein": "pork"}, {"id": "2c-AigKe804", "title": "Marion's Best Massaman Curry", "note": "Rich, peanutty, coconut-based beef curry", "tag": "rich", "protein": "beef", "batch": 3}, {"id": "O3sTLZtU61M", "title": "Khao Soi Noodle Soup (Slow-Cooker)", "note": "Creamy coconut curry noodle soup, Northern Thai comfort food", "tag": "rich", "protein": "chicken", "batch": 3}]}, {"name": "Pailin Chongchitnant", "channel": "Hot Thai Kitchen", "videos": [{"id": "9FSlqSWEMBg", "title": "Nam Tok Thai Grilled Steak Salad", "note": "Grilled lean beef + herbs, low-carb", "tag": "meat", "batch": 1, "protein": "beef"}, {"id": "yCRUvp_JY8E", "title": "Laab Gai Spicy Chicken Salad", "note": "Minced lean chicken + herbs, low-carb", "tag": "meat", "batch": 1, "protein": "chicken"}]}]}, {"id": "philippines", "name": "Philippines", "flag": "🇵🇭", "tagline": "Steamed fish & vegetable-forward stews", "chefs": [{"name": "Panlasang Pinoy", "channel": "Panlasang Pinoy", "videos": [{"id": "IYIR8mMpXzQ", "title": "Pork Monggo & Crispy Galunggong", "note": "Fish + legume + vegetable", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "zW4qAb8eTW0", "title": "Steamed Lapu-Lapu Fish", "note": "Lean steamed fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}]}]}, {"id": "vietnam", "name": "Vietnam", "flag": "🇻🇳", "tagline": "Light broths, herbs & lean chicken", "chefs": [{"name": "Helen Le", "channel": "Helen's Recipes", "videos": [{"id": "vO81lQvYodI", "title": "Canh Chua Ca, Vietnamese Sweet & Sour Fish Soup", "note": "Light fish soup with vegetables/tamarind broth", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "e5W8AFCfS98", "title": "Ginger Chicken (Ga Kho Gung)", "note": "Braised lean chicken, minimal oil", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "3vhfZpWI69g", "title": "Chicken Salad (Goi Ga Bap Cai)", "note": "Shredded chicken + cabbage salad, low-carb", "tag": "low-carb", "protein": "chicken", "batch": 2}, {"id": "36E3XXqab40", "title": "Pho Ga (Vietnamese Chicken Noodle Soup)", "note": "Lean chicken broth soup with rice noodles", "tag": "complex-carb", "protein": "chicken", "batch": 2}]}]}, {"id": "nigeria", "name": "Nigeria", "flag": "🇳🇬", "tagline": "Vegetable soups & grilled tilapia", "chefs": [{"name": "Zeelicious Foods", "channel": "Zeelicious Foods", "videos": [{"id": "K6sgvvGso8M", "title": "Nigerian Vegetable Salad", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "qz5AsrqOhNc", "title": "A Healthy Efo Riro (Vegetable Soup)", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "qURapRM-nac", "title": "My Go-To Healthy Dinner", "note": "Health-framed, low-carb friendly", "tag": "veg", "protein": "veg", "batch": 2}, {"id": "AS_o7o6v8fs", "title": "Delicious Fish Stew Recipe", "note": "Fish-based stew, lean protein", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "tzEQtTHSPAY", "title": "Oven Baked Jollof Rice", "note": "Smoky, oven-baked tomato rice, West African party staple", "tag": "rich", "protein": "veg", "batch": 3}]}, {"name": "Flo Chinyere", "channel": "Flo Chinyere", "videos": [{"id": "GP-_FPirfEo", "title": "Grilled Tilapia", "note": "Lean grilled fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "YKkNhhjVI8c", "title": "Vegetable Soup with Ugu & Waterleaf", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "KVlq27_hpUs", "title": "Nigerian Rice and Beans", "note": "Whole-grain rice + legumes", "tag": "complex-carb", "protein": "legume", "batch": 2}, {"id": "BZbZbwWLCKE", "title": "Chicken Sauce Recipe", "note": "Lean chicken in tomato-based sauce", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "Ewn5HCeK6pg", "title": "Nigerian Egusi Soup (Caking Method)", "note": "Rich, thick ground-melon-seed soup with palm oil", "tag": "rich", "protein": "beef", "batch": 3}]}, {"name": "Chef Lola", "channel": "Chef Lola's Kitchen", "videos": [{"id": "K25Je-vMtVA", "title": "Nigerian Salad", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "yJqOPgtiWXQ", "title": "Nigerian Mackerel Fish Stew", "note": "Lean fish-forward", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "hZUcQLTpV28", "title": "Easy Chicken Vegetable Stir Fry Sauce", "note": "Chicken + vegetables, stir-fried not fried", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "Ehc11XgqTpQ", "title": "Chicken Fried Rice", "note": "Whole-grain rice + lean chicken, stir-fried", "tag": "complex-carb", "protein": "chicken", "batch": 2}]}]}, {"id": "russia", "name": "Russia", "flag": "🇷🇺", "tagline": "Borscht, dumplings & hearty comfort food", "chefs": [{"name": "Natasha's Kitchen", "channel": "Natashas Kitchen", "videos": [{"id": "6CXgPVw_-0g", "title": "Classic Ukrainian Borscht Recipe", "note": "Beet-and-cabbage soup with lean beef, a defining regional staple", "tag": "complex-carb", "protein": "beef", "batch": 4}, {"id": "7r3dlmYUf4s", "title": "Easy Classic Beef Stroganoff Recipe", "note": "Beef and mushrooms in a creamy sauce, classic comfort food", "tag": "rich", "protein": "beef", "batch": 4}]}, {"name": "Helen Rennie", "channel": "Helen Rennie", "videos": [{"id": "qbHpUxsSeqI", "title": "Syrniki (a Russian Breakfast all Foreigners Like)", "note": "Pan-fried farmer's-cheese pancakes, traditional breakfast treat", "tag": "rich", "protein": "egg", "batch": 4}]}, {"name": "Tatyana's Everyday Food", "channel": "Tatyana's Everyday Food", "videos": [{"id": "b8ing4Z1BPY", "title": "How to Make Russian Pelmeni", "note": "Boiled meat-filled dumplings, a signature hearty dish", "tag": "rich", "protein": "beef", "batch": 4}]}]}, {"id": "southafrica", "name": "South Africa", "flag": "🇿🇦", "tagline": "Chakalaka, bobotie & Cape Malay classics", "chefs": [{"name": "Charlé Visser", "channel": "PantsDownApronsOn", "videos": [{"id": "60BY0Ih8_2I", "title": "Chakalaka (South African Spiced Vegetable Relish)", "note": "Vegetable-forward tomato & bean relish, low-carb", "tag": "veg", "protein": "veg", "batch": 7}, {"id": "svsEzAv9rCw", "title": "Traditional Cape Malay Bobotie", "note": "Curried minced meat baked with an egg custard topping", "tag": "rich", "protein": "beef", "batch": 7}]}]}, {"id": "kenya", "name": "Kenya", "flag": "🇰🇪", "tagline": "Tilapia, githeri & coastal coconut stews", "chefs": [{"name": "Kaluhi Adagala", "channel": "Kaluhi's Kitchen", "videos": [{"id": "WW3nJQeWTrw", "title": "Chili Lemon Garlic Tilapia", "note": "Lean whole fish, citrus and chili, low-carb", "tag": "seafood", "protein": "fish", "batch": 7}, {"id": "DSzVLyQXntw", "title": "Chili Cumin Coconut Milk Yellow Bean Stew", "note": "Legume-forward bean stew in a light coconut broth", "tag": "complex-carb", "protein": "legume", "batch": 7}]}, {"name": "Mayuri Patel", "channel": "Mayuri's Jikoni", "videos": [{"id": "ofbIqRCoUAE", "title": "Irio, Kenyan Style", "note": "Mashed corn, peas, potatoes and greens (kale or pumpkin leaves work too)", "tag": "complex-carb", "protein": "veg", "batch": 8}]}, {"name": "Samson Wagacha", "channel": "Dinner DeeAs", "videos": [{"id": "kqEat2aLKCo", "title": "Kenyan Beef Stew, Ugali & Sukuma", "note": "A full Kenyan plate in one: beef stew, cornmeal ugali and sauteed kale-style sukuma", "tag": "meat", "protein": "beef", "batch": 8}]}]}]};
+  var DATA = {"regions": [{"id": "india", "name": "India", "flag": "🇮🇳", "tagline": "Dal, millets, sprouts & tandoori — the healthy way", "chefs": [{"name": "Sanjeev Kapoor", "channel": "Sanjeev Kapoor Khazana", "videos": [{"id": "QUXe84xQZ5s", "title": "Dal Tadka", "note": "Classic tempered lentils, high-protein & fiber", "tag": "complex-carb", "batch": 1, "protein": "legume"}, {"id": "DyIeuTuAoZM", "title": "Ragi Sankati (Millet Khazana)", "note": "Finger-millet dish, complex-carb + fiber", "tag": "complex-carb", "batch": 2, "protein": "veg"}, {"id": "lFZyNDNfUvU", "title": "Shahi Paneer | Sanjeev Kapoor Khazana", "note": "Rich cashew-cream paneer curry, Mughlai royal dish", "tag": "rich", "protein": "veg", "batch": 3}]}, {"name": "Ranveer Brar", "channel": "Chef Ranveer Brar", "videos": [{"id": "tp0BmholJic", "title": "Tandoori Broccoli, No Oven No Tandoor", "note": "Grilled vegetable, low-carb", "tag": "veg", "batch": 2, "protein": "veg"}, {"id": "N4Vldh095Q0", "title": "Methi Dal Tadka (No Onion No Garlic)", "note": "Fenugreek-lentil dal, fiber-rich", "tag": "complex-carb", "batch": 2, "protein": "legume"}, {"id": "b7yuoRk227Y", "title": "Butter Chicken Recipe | Butter Chicken at home", "note": "Creamy tomato-butter gravy, restaurant classic", "tag": "rich", "protein": "chicken", "batch": 3}]}, {"name": "Kunal Kapur", "channel": "Kunal Kapur", "videos": [{"id": "K843BPF6OV0", "title": "Dal Moth Chaat, Hi-Protein Salad", "note": "Sprouted moth beans, high-protein/fiber", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "VXZg5UiTFmE", "title": "Multi-Millet Pancakes", "note": "Millet dosa mix, complex-carb breakfast", "tag": "complex-carb", "batch": 2, "protein": "veg"}]}, {"name": "Sanjyot Keer", "channel": "Your Food Lab", "videos": [{"id": "lI9hUernvQ8", "title": "Dahi Waala Paneer (No Onion No Garlic)", "note": "Yogurt-based paneer masala, lean protein", "tag": "veg", "batch": 2, "protein": "veg"}, {"id": "2V2n1UK3LLA", "title": "Restaurant Style Dal Khichdi", "note": "Dal + grain comfort bowl, legume-forward", "tag": "complex-carb", "batch": 2, "protein": "legume"}]}, {"name": "Kabita Singh", "channel": "Kabita's Kitchen", "videos": [{"id": "yEMwra2ZjPE", "title": "Healthy Veg Thali, Just 2 Spoons of Oil", "note": "Low-oil vegetable thali", "tag": "veg", "batch": 2, "protein": "veg"}, {"id": "Xsie55XKuxg", "title": "Lahsooni Dal Tadka", "note": "Garlic dal tadka, legume/fiber", "tag": "complex-carb", "batch": 2, "protein": "legume"}, {"id": "RG9JloCcHck", "title": "Chicken Dum Biryani, Hyderabadi Style", "note": "Layered, slow-cooked festive rice-and-chicken feast", "tag": "rich", "protein": "chicken", "batch": 3}]}, {"name": "Hebbar's Kitchen", "channel": "Hebbar's Kitchen", "videos": [{"id": "bFaroURuPV8", "title": "Sprout Salad, Weight-Loss Recipe", "note": "Sprouted moong, fiber/protein", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "I6DgNRcVN84", "title": "Instant Ragi Dosa", "note": "Finger millet dosa, complex-carb", "tag": "complex-carb", "batch": 2, "protein": "veg"}]}, {"name": "Archana Doshi", "channel": "Archana's Kitchen", "videos": [{"id": "ShZ3hJujn-Y", "title": "Dal Palak, High-Protein Recipe", "note": "Spinach + dal, veg-forward high-protein", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "AanaaqmsXVE", "title": "Tomato Quinoa (Masala Quinoa)", "note": "Quinoa-based, complex-carb & protein", "tag": "complex-carb", "batch": 2, "protein": "veg"}]}, {"name": "Bhavna Patel", "channel": "Bhavna's Kitchen & Living", "videos": [{"id": "LYURWQzKOzk", "title": "Sprouted Mung Bean Salad", "note": "Fiber & protein-rich sprout salad", "tag": "veg", "batch": 2, "protein": "legume"}, {"id": "5MAj8xhHY7s", "title": "Spicy Brussels Sprouts, Indian Style", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 2, "protein": "veg"}]}, {"name": "Harpal Singh Sokhi", "channel": "Chef Harpal Singh", "videos": [{"id": "s9HjFk7lIyg", "title": "Maah Choleyan Di Dal", "note": "Whole black-gram dal, fiber/protein", "tag": "complex-carb", "batch": 2, "protein": "legume"}, {"id": "1bQC0dJQdNM", "title": "Restaurant Style Paneer Tikka", "note": "Grilled tandoor-style paneer, low-carb protein", "tag": "low-carb", "batch": 2, "protein": "veg"}]}, {"name": "Nisa Homey", "channel": "Nisa Homey", "videos": [{"id": "lQse37xy9oQ", "title": "Kerala Chicken Curry Recipe | Kerala Recipes | Nisa Homey", "note": "Kerala-style chicken curry, lean regional protein", "tag": "meat", "protein": "chicken", "batch": 5}, {"id": "mcoPivQ7Na8", "title": "Kerala Fish Curry Recipe - Meen Curry - Kerala Recipes | Nisa Homey", "note": "Kerala fish curry, lean seafood", "tag": "seafood", "protein": "fish", "batch": 5}, {"id": "fu1uSTMHE54", "title": "Egg Roast Recipe - Easy Kerala Style Mutta Roast | Nisa Homey", "note": "Kerala-style spiced egg roast", "tag": "rich", "protein": "egg", "batch": 5}, {"id": "w9NPrbZZcYU", "title": "100% Oil Free Pressure Cooker Indian Curry Gravy Recipe - Healthy Punjabi Matar Paneer | Nisa Homey", "note": "Oil-free paneer & peas curry, Punjab style", "tag": "low-carb", "protein": "veg", "batch": 5}]}, {"name": "VahChef", "channel": "Vahchef - VahRehVah", "videos": [{"id": "NzXbURbvONg", "title": "Easy Chicken Curry With Onion Tomato Gravy - By VahChef @ VahRehVah.com", "note": "Andhra-style chicken curry with onion-tomato gravy", "tag": "meat", "protein": "chicken", "batch": 5}]}, {"name": "Bong Eats", "channel": "Bong Eats", "videos": [{"id": "JrfPmWlKJ9o", "title": "Machh'er Jhal, shorshe posto diye — Bengali fish curry recipe with mustard & poppy", "note": "West Bengal fish curry with mustard & poppy seed", "tag": "seafood", "protein": "fish", "batch": 5}]}, {"name": "MadhurasRecipe", "channel": "MadhurasRecipe Hindi", "videos": [{"id": "8ESqMMnQFAY", "title": "Misal Pav Recipe | Maharashtrian Misal Pav | Misal Tarri recipe MadhurasRecipe", "note": "Maharashtrian spiced sprouted-lentil curry", "tag": "rich", "protein": "legume", "batch": 5}]}, {"name": "Venkatesh Bhat", "channel": "Venkatesh Bhat's Idhayam Thotta Samayal", "videos": [{"id": "3NAf1UEE8E0", "title": "Venkatesh Bhat Makes Sundakkai Vathakuzhambu | Vatha Kuzhambu Recipe", "note": "Tamil Nadu tangy tamarind vegetable curry", "tag": "veg", "protein": "veg", "batch": 5}]}, {"name": "Rajshri Food", "channel": "Rajshri Food", "videos": [{"id": "vI907Peay-U", "title": "Gujarati Dhokla Recipe - How To Make Perfect Dhokla At Home - Snack Recipe by Ruchi Bharani", "note": "Steamed Gujarati fermented-rice-batter snack", "tag": "complex-carb", "protein": "veg", "batch": 5}]}, {"name": "Smita Deo", "channel": "Smita Deo", "videos": [{"id": "Eg2gTNJhM7s", "title": "Bisi Bele Bath Recipe | Authentic Karnataka-Style Step by Step Recipe", "note": "Karnataka lentil-rice-vegetable one-pot dish", "tag": "complex-carb", "protein": "legume", "batch": 5}]}]}, {"id": "usa", "name": "USA", "flag": "🇺🇸", "tagline": "Lean proteins & big veggie bowls", "chefs": [{"name": "Lisa Bryan", "channel": "Downshiftology", "videos": [{"id": "h6EaCv-lLQY", "title": "Easy Chicken Stir Fry (in 30 Minutes!)", "note": "Lean chicken breast + vegetables, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "hmodbYmLNfA", "title": "Favorite Egg Salad", "note": "High-protein, veggie-forward, no starchy carbs", "tag": "low-carb", "batch": 1, "protein": "egg"}]}, {"name": "Dani Spies", "channel": "Clean & Delicious", "videos": [{"id": "W6WwbfLxuNQ", "title": "Chopped Detox Salad", "note": "Raw-vegetable chopped salad, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "1_XXBUOCKkA", "title": "Quick Canned Salmon Salad", "note": "Lean fish protein, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}]}, {"name": "Nisha Vora", "channel": "Rainbow Plant Life", "videos": [{"id": "Wk4kr_Imq74", "title": "Mediterranean Grain Bowls with Chickpeas & Lentils", "note": "Complex-carb grains, legume-forward", "tag": "complex-carb", "batch": 1, "protein": "legume"}, {"id": "aMhUXl2vcW0", "title": "Anti-Inflammatory Chickpea Stew", "note": "One-pot, high-protein legumes", "tag": "veg", "batch": 1, "protein": "legume"}]}, {"name": "Lindsay Ostrom", "channel": "Pinch of Yum", "videos": [{"id": "-OT2_eURMQw", "title": "Salmon Burgers with Slaw", "note": "Lean fish patty + crunchy raw slaw", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "3Hwx2wYjx5g", "title": "Salmon with Basil Sauce and Tomato Salad", "note": "Pan-seared salmon, fresh tomato salad", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "kElIc--z_Hc", "title": "Garlic Basil Chicken with Tomato Butter Sauce", "note": "Skillet chicken breast, light pan sauce", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "rY1G6I-85UE", "title": "Coconut Curry Salmon", "note": "Salmon in a light coconut-curry broth", "tag": "seafood", "protein": "fish", "batch": 2}]}, {"name": "Tieghan Gerard", "channel": "Half Baked Harvest", "videos": [{"id": "Pu5uxFf7VPc", "title": "One Pot Stove Top Mac and Cheese", "note": "Ultra-creamy one-pot indulgent mac and cheese", "tag": "rich", "protein": "veg", "batch": 3}, {"id": "eD0NoxcvrzE", "title": "Easiest No-Boil Brie Mac and Cheese", "note": "Baked brie folded into mac and cheese, holiday comfort food", "tag": "rich", "protein": "veg", "batch": 3}]}]}, {"id": "mexico", "name": "Mexico", "flag": "🇲🇽", "tagline": "Grilled fish, cactus & citrus", "chefs": [{"name": "Cocina Delirante", "channel": "Cocina Delirante", "videos": [{"id": "IAzpGUmMf60", "title": "Ensaladas Saludables con Pollo", "note": "Lean chicken + salad, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "AU_qLuRucw8", "title": "Recetas Saludables con Pescado", "note": "Lean fish-forward, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "2CjDzwUHPfs", "title": "Deliciosas Recetas de Ensalada de Pollo", "note": "Chicken salad recipes, lean protein-forward", "tag": "meat", "protein": "chicken", "batch": 2}]}, {"name": "Rick Bayless", "channel": "Rick Bayless", "videos": [{"id": "8Zxwxf-wbeA", "title": "Tikin Xic: Achiote-Grilled Fish from Yucatán", "note": "Grilled lean fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "F1AgMhxFBVk", "title": "Nopales Cactus Salad", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}]}, {"name": "Pati Jinich", "channel": "Pati Jinich", "videos": [{"id": "Tx8cBXAouf4", "title": "How to Make Tortilla Soup", "note": "Vegetable- and lean-broth-based soup", "tag": "veg", "protein": "veg", "batch": 2}, {"id": "EG2xyKKs7z8", "title": "Jicama and Greens Salad", "note": "Raw vegetable salad, low-carb", "tag": "veg", "protein": "veg", "batch": 2}, {"id": "kY2VHJEQOZA", "title": "Cali-Baja Fish Tacos", "note": "Grilled lean fish preparation", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "YMmGE33ftH0", "title": "Sweet Lime Roasted Chicken with Broccolini", "note": "Roasted lean chicken with vegetables", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "ctzw9wA2YKY", "title": "The Art of Mole", "note": "Deep, complex, chocolate-chile mole sauce tradition", "tag": "rich", "protein": "chicken", "batch": 3}, {"id": "eC18-L8GC6o", "title": "Mole Verde with Pork & White Beans", "note": "Rich green mole braise with pork and beans", "tag": "rich", "protein": "pork", "batch": 3}, {"id": "WBGWZl3LVKc", "title": "Backyard Carne Asada", "note": "Classic grilled marinated skirt/flank steak, Mexican cookout staple", "tag": "meat", "protein": "beef", "batch": 9}]}]}, {"id": "greece", "name": "Greece", "flag": "🇬🇷", "tagline": "Olive oil, fresh fish & Greek classics", "chefs": [{"name": "Akis Petretzikis", "channel": "Akis Petretzikis", "videos": [{"id": "j51U-8VBsHQ", "title": "Baked Fish & Vegetables", "note": "Lean fish + roasted vegetables", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "1cMuk-oVZGM", "title": "Salt Baked Fish", "note": "Whole fish, no added fat, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "pkULmADHt4s", "title": "Chicken Salad", "note": "Lean chicken salad, Greek home cooking", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "ktjeTddGQ3E", "title": "Greek Fish Soup", "note": "Broth-based fish soup, low fat", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "P_0cA8aoOno", "title": "Pastitsio (Greek Baked Pasta)", "note": "Layered baked pasta with meat sauce and creamy béchamel", "tag": "rich", "protein": "beef", "batch": 3}, {"id": "vmSnCeOeRO8", "title": "Greek Chicken Souvlaki", "note": "Grilled marinated chicken skewers, classic Greek street food", "tag": "meat", "protein": "chicken", "batch": 9}]}]}, {"id": "italy", "name": "Italy", "flag": "🇮🇹", "tagline": "Pasta, vegetables & lean cured meats", "chefs": [{"name": "Vincenzo Prosperi", "channel": "Vincenzo's Plate", "videos": [{"id": "riTriHkenjs", "title": "Real Italian Caprese Salad", "note": "Vegetables + fresh mozzarella, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "ETzLGX8UFaU", "title": "Bresaola Salad, an Healthy Italian Classic", "note": "Lean cured beef + greens, low-carb", "tag": "meat", "batch": 1, "protein": "beef"}, {"id": "3VKQpc1GH2U", "title": "The Ultimate Short Rib Ragu Recipe", "note": "Slow-braised beef short ribs, fall-off-the-bone pasta sauce", "tag": "rich", "protein": "beef", "batch": 9}]}, {"name": "Gennaro Contaldo", "channel": "Jamie Oliver", "videos": [{"id": "SwDJi_PB-wY", "title": "Lemon Pasta", "note": "Whole-ingredient pasta, light lemon sauce", "tag": "complex-carb", "protein": "veg", "batch": 2}, {"id": "t-lCUP4tzR4", "title": "Aubergine Pasta Bake", "note": "Vegetable-forward aubergine bake", "tag": "veg", "protein": "veg", "batch": 2}]}]}, {"id": "spain", "name": "Spain", "flag": "🇪🇸", "tagline": "Legumes, chickpeas & Mediterranean staples", "chefs": [{"name": "Albert Bevia", "channel": "Spain on a Fork", "videos": [{"id": "iL7A7jmMAJA", "title": "Spanish Lentil Salad (Ensalada de Lentejas)", "note": "Legume-forward, complex-carb", "tag": "complex-carb", "batch": 1, "protein": "legume"}, {"id": "8dQsErPMZM0", "title": "Spinach Salad with Spiced Chickpeas", "note": "Legumes + leafy greens, 20 min", "tag": "veg", "batch": 1, "protein": "legume"}, {"id": "88JvhCoML1s", "title": "Classic Spanish Chickpeas and Rice (Cadiz)", "note": "Legume + whole-grain rice dish", "tag": "complex-carb", "protein": "legume", "batch": 2}, {"id": "nLQQmn-WFTA", "title": "Chickpea Salad with Tuna & Eggs", "note": "Legume salad with lean tuna/egg protein", "tag": "complex-carb", "protein": "legume", "batch": 2}, {"id": "DlH3ZNjIAmM", "title": "Spanish Lentil and Cod Stew", "note": "Lentils + lean white fish stew", "tag": "complex-carb", "protein": "fish", "batch": 2}, {"id": "J5mQOb4gFUo", "title": "Spanish Garlic Chicken (Pollo al Ajillo)", "note": "Chicken breast in a garlic-wine pan sauce, iconic Spanish weeknight dish", "tag": "meat", "protein": "chicken", "batch": 9}]}]}, {"id": "lebanon", "name": "Lebanon", "flag": "🇱🇧", "tagline": "Shawarma, lentils & fresh herbs", "chefs": [{"name": "Yumna Jawad", "channel": "Feel Good Foodie", "videos": [{"id": "SDNy8zZ8urw", "title": "Lebanese Chicken Shawarma", "note": "Lean marinated chicken, low-carb without pita", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "8iEmTTaA1Wo", "title": "Loaf Pan Chicken Shawarma", "note": "Lean chicken, minimal oil", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "EdfJMTfPvFg", "title": "Chicken Lentil Soup", "note": "Chicken + lentils, broth-based", "tag": "complex-carb", "protein": "chicken", "batch": 2}, {"id": "wOlibTyLVDQ", "title": "Baklava in 10 Minutes", "note": "Honey-soaked, buttery phyllo and nut dessert", "tag": "rich", "protein": "veg", "batch": 3}, {"id": "EVDxpYm6Q_E", "title": "Beef Kafta (Authentic Lebanese Recipe)", "note": "Grilled spiced ground beef skewers with parsley and onion", "tag": "meat", "protein": "beef", "batch": 9}]}]}, {"id": "egypt", "name": "Egypt", "flag": "🇪🇬", "tagline": "Shawarma bowls & Mediterranean-diet staples", "chefs": [{"name": "Suzy Karadsheh", "channel": "The Mediterranean Dish", "videos": [{"id": "pCtq5rK2_Ns", "title": "Chicken Shawarma Salad Bowls", "note": "Lean chicken + veg bowl, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "gkkh-yx_4Gc", "title": "Homemade Chicken Shawarma", "note": "Lean protein, vegetable-forward", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "SLJdbA3mm3Y", "title": "Za'atar Garlic Salmon", "note": "Baked salmon, Mediterranean-diet recipe", "tag": "seafood", "protein": "fish", "batch": 2}]}]}, {"id": "palestine", "name": "Palestine", "flag": "🇵🇸", "tagline": "Za'atar, lentils & home-style classics", "chefs": [{"name": "Zaatar & Zaytoun", "channel": "Zaatar and Zaytoun", "videos": [{"id": "NPCIZ8su1NQ", "title": "7 Spice & Sumac Chicken", "note": "Lean grilled chicken, low-carb", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "8iureT851ng", "title": "Lebanese Lentil Soup", "note": "Legume-based soup, low fat, quick and easy", "tag": "complex-carb", "protein": "legume", "batch": 2}]}]}, {"id": "korea", "name": "Korea", "flag": "🇰🇷", "tagline": "Bibimbap, bulgogi & fermented staples", "chefs": [{"name": "Maangchi", "channel": "Maangchi", "videos": [{"id": "6KCWzRfFyr4", "title": "Bibimbap", "note": "Vegetable-forward mixed rice, lean protein", "tag": "complex-carb", "batch": 1, "protein": "veg"}, {"id": "i1djfV9uigc", "title": "Japchae, Glass Noodles with Vegetables", "note": "Vegetable-forward, moderate carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "trqL9v7GSGw", "title": "Maangchi's Mapa Tofu", "note": "Tofu-based dish, lean plant protein", "tag": "veg", "protein": "legume", "batch": 2}, {"id": "3qBjL_HGvco", "title": "Bulgogi (Korean BBQ)", "note": "Grilled marinated lean beef, no deep-frying", "tag": "meat", "protein": "beef", "batch": 2}, {"id": "23tRGHUX3qM", "title": "Grilled Pork Belly (Samgyeopsal-gui)", "note": "Sizzling, fatty grilled Korean pork belly feast", "tag": "rich", "protein": "pork", "batch": 3}, {"id": "JAF3Bpy-AsY", "title": "LA Galbi (Korean BBQ Beef Short Ribs)", "note": "Grilled marinated beef short ribs, LA-cut Korean BBQ classic", "tag": "rich", "protein": "beef", "batch": 9}]}]}, {"id": "japan", "name": "Japan", "flag": "🇯🇵", "tagline": "Teriyaki, lean fish & quick pan dishes", "chefs": [{"name": "Namiko Chen", "channel": "Just One Cookbook", "videos": [{"id": "FrIqFGKNVdw", "title": "Teriyaki Salmon", "note": "Lean fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "6NkG4Qp0lyc", "title": "Chicken Teriyaki", "note": "Lean chicken, low-carb", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "mG4jEWAyzBk", "title": "Pan-Fried Curry Chicken", "note": "Pan-seared (not deep-fried) chicken, curry spice", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "PHuxPEUWCcw", "title": "Tonjiru (Pork and Vegetable Miso Soup)", "note": "Lean pork simmered with root vegetables in miso broth", "tag": "complex-carb", "protein": "pork", "batch": 6}, {"id": "TEZpsg_KtXc", "title": "Karaage (Japanese Fried Chicken)", "note": "Crispy soy-ginger marinated fried chicken, a Japanese home-cooking staple", "tag": "rich", "protein": "chicken", "batch": 9}]}]}, {"id": "china", "name": "China", "flag": "🇨🇳", "tagline": "Steamed fish & light home-style stir-fry", "chefs": [{"name": "Chinese Cooking Demystified", "channel": "Chinese Cooking Demystified", "videos": [{"id": "4hdpejFLkPc", "title": "Perfect Cantonese Steamed Fish", "note": "Lean fish, no frying", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "BWq7Jdmgo5o", "title": "Steamed Chicken with Mushrooms", "note": "Lean chicken + mushrooms", "tag": "meat", "batch": 1, "protein": "chicken"}, {"id": "vFJDxR9N7uk", "title": "Suan Cai Yu, Sichuan Sour & Spicy Poached Fish Soup", "note": "Poached (not fried) fish in a light broth", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "i-fU6MCPZ2M", "title": "Basics: Beef and Broccoli", "note": "Velveted beef stir-fried with broccoli, a Cantonese-American staple done right", "tag": "meat", "protein": "beef", "batch": 9}]}, {"name": "Souped Up Recipes", "channel": "Souped Up Recipes", "videos": [{"id": "BcJKyT-ervs", "title": "15-Minute Chinese Shrimp Mushroom Tofu Soup", "note": "Shrimp + tofu + mushroom, light broth", "tag": "seafood", "protein": "fish", "batch": 2}]}]}, {"id": "thailand", "name": "Thailand", "flag": "🇹🇭", "tagline": "Herb-packed salads & fast stir-fries", "chefs": [{"name": "Marion Grasby", "channel": "Marion's Kitchen", "videos": [{"id": "4wC8WxqXW-M", "title": "Chicken Breast Stir-Fry", "note": "Lean chicken + veg stir-fry, low-carb", "tag": "low-carb", "batch": 1, "protein": "chicken"}, {"id": "d6YvsmxH0iM", "title": "Korean-Style Spicy Pork Stir-Fry", "note": "Vegetable-forward stir-fry", "tag": "meat", "batch": 1, "protein": "pork"}, {"id": "2c-AigKe804", "title": "Marion's Best Massaman Curry", "note": "Rich, peanutty, coconut-based beef curry", "tag": "rich", "protein": "beef", "batch": 3}, {"id": "O3sTLZtU61M", "title": "Khao Soi Noodle Soup (Slow-Cooker)", "note": "Creamy coconut curry noodle soup, Northern Thai comfort food", "tag": "rich", "protein": "chicken", "batch": 3}]}, {"name": "Pailin Chongchitnant", "channel": "Hot Thai Kitchen", "videos": [{"id": "9FSlqSWEMBg", "title": "Nam Tok Thai Grilled Steak Salad", "note": "Grilled lean beef + herbs, low-carb", "tag": "meat", "batch": 1, "protein": "beef"}, {"id": "yCRUvp_JY8E", "title": "Laab Gai Spicy Chicken Salad", "note": "Minced lean chicken + herbs, low-carb", "tag": "meat", "batch": 1, "protein": "chicken"}]}]}, {"id": "philippines", "name": "Philippines", "flag": "🇵🇭", "tagline": "Steamed fish & vegetable-forward stews", "chefs": [{"name": "Panlasang Pinoy", "channel": "Panlasang Pinoy", "videos": [{"id": "IYIR8mMpXzQ", "title": "Pork Monggo & Crispy Galunggong", "note": "Fish + legume + vegetable", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "zW4qAb8eTW0", "title": "Steamed Lapu-Lapu Fish", "note": "Lean steamed fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "aoc1_LwKaUg", "title": "Killer Chicken Adobo", "note": "Soy-vinegar braised chicken, the Philippines' national dish", "tag": "meat", "protein": "chicken", "batch": 9}]}]}, {"id": "vietnam", "name": "Vietnam", "flag": "🇻🇳", "tagline": "Light broths, herbs & lean chicken", "chefs": [{"name": "Helen Le", "channel": "Helen's Recipes", "videos": [{"id": "vO81lQvYodI", "title": "Canh Chua Ca, Vietnamese Sweet & Sour Fish Soup", "note": "Light fish soup with vegetables/tamarind broth", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "e5W8AFCfS98", "title": "Ginger Chicken (Ga Kho Gung)", "note": "Braised lean chicken, minimal oil", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "3vhfZpWI69g", "title": "Chicken Salad (Goi Ga Bap Cai)", "note": "Shredded chicken + cabbage salad, low-carb", "tag": "low-carb", "protein": "chicken", "batch": 2}, {"id": "36E3XXqab40", "title": "Pho Ga (Vietnamese Chicken Noodle Soup)", "note": "Lean chicken broth soup with rice noodles", "tag": "complex-carb", "protein": "chicken", "batch": 2}, {"id": "5bIjDYEs6Qc", "title": "Pho Bo (Vietnamese Beef Noodle Soup)", "note": "Slow-simmered beef broth with rice noodles, Vietnam's iconic soup", "tag": "complex-carb", "protein": "beef", "batch": 9}]}]}, {"id": "nigeria", "name": "Nigeria", "flag": "🇳🇬", "tagline": "Vegetable soups & grilled tilapia", "chefs": [{"name": "Zeelicious Foods", "channel": "Zeelicious Foods", "videos": [{"id": "K6sgvvGso8M", "title": "Nigerian Vegetable Salad", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "qz5AsrqOhNc", "title": "A Healthy Efo Riro (Vegetable Soup)", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "qURapRM-nac", "title": "My Go-To Healthy Dinner", "note": "Health-framed, low-carb friendly", "tag": "veg", "protein": "veg", "batch": 2}, {"id": "AS_o7o6v8fs", "title": "Delicious Fish Stew Recipe", "note": "Fish-based stew, lean protein", "tag": "seafood", "protein": "fish", "batch": 2}, {"id": "tzEQtTHSPAY", "title": "Oven Baked Jollof Rice", "note": "Smoky, oven-baked tomato rice, West African party staple", "tag": "rich", "protein": "veg", "batch": 3}]}, {"name": "Flo Chinyere", "channel": "Flo Chinyere", "videos": [{"id": "GP-_FPirfEo", "title": "Grilled Tilapia", "note": "Lean grilled fish, low-carb", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "YKkNhhjVI8c", "title": "Vegetable Soup with Ugu & Waterleaf", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "KVlq27_hpUs", "title": "Nigerian Rice and Beans", "note": "Whole-grain rice + legumes", "tag": "complex-carb", "protein": "legume", "batch": 2}, {"id": "BZbZbwWLCKE", "title": "Chicken Sauce Recipe", "note": "Lean chicken in tomato-based sauce", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "Ewn5HCeK6pg", "title": "Nigerian Egusi Soup (Caking Method)", "note": "Rich, thick ground-melon-seed soup with palm oil", "tag": "rich", "protein": "beef", "batch": 3}]}, {"name": "Chef Lola", "channel": "Chef Lola's Kitchen", "videos": [{"id": "K25Je-vMtVA", "title": "Nigerian Salad", "note": "Vegetable-forward, low-carb", "tag": "veg", "batch": 1, "protein": "veg"}, {"id": "yJqOPgtiWXQ", "title": "Nigerian Mackerel Fish Stew", "note": "Lean fish-forward", "tag": "seafood", "batch": 1, "protein": "fish"}, {"id": "hZUcQLTpV28", "title": "Easy Chicken Vegetable Stir Fry Sauce", "note": "Chicken + vegetables, stir-fried not fried", "tag": "meat", "protein": "chicken", "batch": 2}, {"id": "Ehc11XgqTpQ", "title": "Chicken Fried Rice", "note": "Whole-grain rice + lean chicken, stir-fried", "tag": "complex-carb", "protein": "chicken", "batch": 2}]}]}, {"id": "russia", "name": "Russia", "flag": "🇷🇺", "tagline": "Borscht, dumplings & hearty comfort food", "chefs": [{"name": "Natasha's Kitchen", "channel": "Natashas Kitchen", "videos": [{"id": "6CXgPVw_-0g", "title": "Classic Ukrainian Borscht Recipe", "note": "Beet-and-cabbage soup with lean beef, a defining regional staple", "tag": "complex-carb", "protein": "beef", "batch": 4}, {"id": "7r3dlmYUf4s", "title": "Easy Classic Beef Stroganoff Recipe", "note": "Beef and mushrooms in a creamy sauce, classic comfort food", "tag": "rich", "protein": "beef", "batch": 4}]}, {"name": "Helen Rennie", "channel": "Helen Rennie", "videos": [{"id": "qbHpUxsSeqI", "title": "Syrniki (a Russian Breakfast all Foreigners Like)", "note": "Pan-fried farmer's-cheese pancakes, traditional breakfast treat", "tag": "rich", "protein": "egg", "batch": 4}]}, {"name": "Tatyana's Everyday Food", "channel": "Tatyana's Everyday Food", "videos": [{"id": "b8ing4Z1BPY", "title": "How to Make Russian Pelmeni", "note": "Boiled meat-filled dumplings, a signature hearty dish", "tag": "rich", "protein": "beef", "batch": 4}]}]}, {"id": "southafrica", "name": "South Africa", "flag": "🇿🇦", "tagline": "Chakalaka, bobotie & Cape Malay classics", "chefs": [{"name": "Charlé Visser", "channel": "PantsDownApronsOn", "videos": [{"id": "60BY0Ih8_2I", "title": "Chakalaka (South African Spiced Vegetable Relish)", "note": "Vegetable-forward tomato & bean relish, low-carb", "tag": "veg", "protein": "veg", "batch": 7}, {"id": "svsEzAv9rCw", "title": "Traditional Cape Malay Bobotie", "note": "Curried minced meat baked with an egg custard topping", "tag": "rich", "protein": "beef", "batch": 7}]}]}, {"id": "kenya", "name": "Kenya", "flag": "🇰🇪", "tagline": "Tilapia, githeri & coastal coconut stews", "chefs": [{"name": "Kaluhi Adagala", "channel": "Kaluhi's Kitchen", "videos": [{"id": "WW3nJQeWTrw", "title": "Chili Lemon Garlic Tilapia", "note": "Lean whole fish, citrus and chili, low-carb", "tag": "seafood", "protein": "fish", "batch": 7}, {"id": "DSzVLyQXntw", "title": "Chili Cumin Coconut Milk Yellow Bean Stew", "note": "Legume-forward bean stew in a light coconut broth", "tag": "complex-carb", "protein": "legume", "batch": 7}]}, {"name": "Mayuri Patel", "channel": "Mayuri's Jikoni", "videos": [{"id": "ofbIqRCoUAE", "title": "Irio, Kenyan Style", "note": "Mashed corn, peas, potatoes and greens (kale or pumpkin leaves work too)", "tag": "complex-carb", "protein": "veg", "batch": 8}]}, {"name": "Samson Wagacha", "channel": "Dinner DeeAs", "videos": [{"id": "kqEat2aLKCo", "title": "Kenyan Beef Stew, Ugali & Sukuma", "note": "A full Kenyan plate in one: beef stew, cornmeal ugali and sauteed kale-style sukuma", "tag": "meat", "protein": "beef", "batch": 8}]}]}]};
+
+  /* ---------- User-added recipes & regions (stored on this device only) ---------- */
+  var PALETTE_CYCLE = [
+    ["#C24E27", "#8A2D14"], ["#1D6470", "#123F47"], ["#A82547", "#7A1934"],
+    ["#2F7A45", "#1D4F30"], ["#9C6516", "#7A4A0E"], ["#423897", "#2C2566"],
+    ["#8C4F27", "#603619"], ["#7A3468", "#55234A"], ["#1E7548", "#144F31"],
+    ["#C1932E", "#8A5A16"]
+  ];
+  var CUSTOM_REGIONS_KEY = "kitchenatlas.customRegions.v1";
+  var CUSTOM_VIDEOS_KEY = "kitchenatlas.customVideos.v1";
+  function loadCustomRegions(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_REGIONS_KEY) || "[]"); }catch(e){ return []; } }
+  function persistCustomRegions(list){ try{ localStorage.setItem(CUSTOM_REGIONS_KEY, JSON.stringify(list)); }catch(e){} }
+  function loadCustomVideos(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_VIDEOS_KEY) || "[]"); }catch(e){ return []; } }
+  function persistCustomVideos(list){ try{ localStorage.setItem(CUSTOM_VIDEOS_KEY, JSON.stringify(list)); }catch(e){} }
+  var COUNTRY_FLAGS = {"afghanistan":"🇦🇫","albania":"🇦🇱","algeria":"🇩🇿","argentina":"🇦🇷","armenia":"🇦🇲","australia":"🇦🇺","austria":"🇦🇹","azerbaijan":"🇦🇿","bahrain":"🇧🇭","bangladesh":"🇧🇩","belarus":"🇧🇾","belgium":"🇧🇪","bolivia":"🇧🇴","bosnia":"🇧🇦","botswana":"🇧🇼","brazil":"🇧🇷","bulgaria":"🇧🇬","cambodia":"🇰🇭","cameroon":"🇨🇲","canada":"🇨🇦","chile":"🇨🇱","china":"🇨🇳","colombia":"🇨🇴","costa rica":"🇨🇷","croatia":"🇭🇷","cuba":"🇨🇺","cyprus":"🇨🇾","czechia":"🇨🇿","czech republic":"🇨🇿","denmark":"🇩🇰","dominican republic":"🇩🇴","ecuador":"🇪🇨","egypt":"🇪🇬","el salvador":"🇸🇻","estonia":"🇪🇪","ethiopia":"🇪🇹","finland":"🇫🇮","france":"🇫🇷","georgia":"🇬🇪","germany":"🇩🇪","ghana":"🇬🇭","greece":"🇬🇷","guatemala":"🇬🇹","honduras":"🇭🇳","hungary":"🇭🇺","iceland":"🇮🇸","india":"🇮🇳","indonesia":"🇮🇩","iran":"🇮🇷","iraq":"🇮🇶","ireland":"🇮🇪","israel":"🇮🇱","italy":"🇮🇹","jamaica":"🇯🇲","japan":"🇯🇵","jordan":"🇯🇴","kazakhstan":"🇰🇿","kenya":"🇰🇪","kuwait":"🇰🇼","laos":"🇱🇦","latvia":"🇱🇻","lebanon":"🇱🇧","libya":"🇱🇾","lithuania":"🇱🇹","malaysia":"🇲🇾","mali":"🇲🇱","malta":"🇲🇹","mexico":"🇲🇽","moldova":"🇲🇩","mongolia":"🇲🇳","morocco":"🇲🇦","mozambique":"🇲🇿","myanmar":"🇲🇲","nepal":"🇳🇵","netherlands":"🇳🇱","new zealand":"🇳🇿","nicaragua":"🇳🇮","nigeria":"🇳🇬","north korea":"🇰🇵","norway":"🇳🇴","oman":"🇴🇲","pakistan":"🇵🇰","palestine":"🇵🇸","panama":"🇵🇦","paraguay":"🇵🇾","peru":"🇵🇪","philippines":"🇵🇭","poland":"🇵🇱","portugal":"🇵🇹","qatar":"🇶🇦","romania":"🇷🇴","russia":"🇷🇺","rwanda":"🇷🇼","saudi arabia":"🇸🇦","senegal":"🇸🇳","serbia":"🇷🇸","singapore":"🇸🇬","slovakia":"🇸🇰","slovenia":"🇸🇮","somalia":"🇸🇴","south africa":"🇿🇦","south korea":"🇰🇷","spain":"🇪🇸","sri lanka":"🇱🇰","sudan":"🇸🇩","sweden":"🇸🇪","switzerland":"🇨🇭","syria":"🇸🇾","taiwan":"🇹🇼","tanzania":"🇹🇿","thailand":"🇹🇭","tunisia":"🇹🇳","turkey":"🇹🇷","turkiye":"🇹🇷","uganda":"🇺🇬","ukraine":"🇺🇦","united arab emirates":"🇦🇪","uae":"🇦🇪","united kingdom":"🇬🇧","uk":"🇬🇧","england":"🇬🇧","scotland":"🇬🇧","wales":"🇬🇧","united states":"🇺🇸","usa":"🇺🇸","united states of america":"🇺🇸","america":"🇺🇸","uruguay":"🇺🇾","uzbekistan":"🇺🇿","venezuela":"🇻🇪","vietnam":"🇻🇳","yemen":"🇾🇪","zambia":"🇿🇦","zimbabwe":"🇿🇼","fiji":"🇫🇯","haiti":"🇭🇹","puerto rico":"🇵🇷","trinidad":"🇹🇹","trinidad and tobago":"🇹🇹","bahamas":"🇧🇸","belize":"🇧🇿","papua new guinea":"🇵🇬","north macedonia":"🇲🇰","macedonia":"🇲🇰","kosovo":"🇽🇰","montenegro":"🇲🇪","luxembourg":"🇱🇺","liechtenstein":"🇱🇮","monaco":"🇲🇨","andorra":"🇦🇩","san marino":"🇸🇲","vatican":"🇻🇦","brunei":"🇧🇳","bhutan":"🇧🇹","maldives":"🇲🇻","seychelles":"🇸🇨","mauritius":"🇲🇺","madagascar":"🇲🇬","namibia":"🇳🇦","angola":"🇦🇴","dr congo":"🇨🇩","congo":"🇨🇬","gabon":"🇬🇦","ivory coast":"🇨🇮","cote d'ivoire":"🇨🇮","burkina faso":"🇧🇫","niger":"🇳🇪","chad":"🇹🇩","benin":"🇧🇯","togo":"🇹🇬","sierra leone":"🇸🇱","liberia":"🇱🇷","guinea":"🇬🇳","gambia":"🇬🇲","mauritania":"🇲🇷","eritrea":"🇪🇷","djibouti":"🇩🇯","burundi":"🇧🇮","malawi":"🇲🇼","lesotho":"🇱🇸","eswatini":"🇸🇿","swaziland":"🇸🇿","comoros":"🇰🇲","cape verde":"🇨🇻","sao tome":"🇸🇹","equatorial guinea":"🇬🇶","central african republic":"🇨🇫","south sudan":"🇸🇸"};
+  function flagForCountryName(name){
+    var key = (name || "").trim().toLowerCase();
+    return COUNTRY_FLAGS[key] || null;
+  }
+  function slugify(name){
+    var base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "region";
+    var id = base, n = 2;
+    while(DATA.regions.some(function(r){ return r.id === id; })){ id = base + "-" + n; n++; }
+    return id;
+  }
+  function mergeCustomContent(){
+    loadCustomRegions().forEach(function(cr){
+      if(!DATA.regions.some(function(r){ return r.id === cr.id; })){
+        DATA.regions.push({id:cr.id, name:cr.name, flag:cr.flag, tagline:cr.tagline, chefs:[], custom:true});
+      }
+    });
+    loadCustomVideos().forEach(function(cv){
+      var region = DATA.regions.find(function(r){ return r.id === cv.regionId; });
+      if(!region) return;
+      var chef = region.chefs.find(function(c){ return c.name === cv.chefName && c.channel === cv.chefChannel; });
+      if(!chef){
+        chef = {name:cv.chefName, channel:cv.chefChannel, videos:[]};
+        region.chefs.push(chef);
+      }
+      if(!chef.videos.some(function(v){ return v.id === cv.video.id; })){
+        chef.videos.push(cv.video);
+      }
+    });
+  }
+  mergeCustomContent();
 
   var REGION_GRADIENTS = {
     india:       ["#C24E27", "#8A2D14"],
@@ -763,10 +895,16 @@
     southafrica: ["#7A3468", "#55234A"],
     kenya:       ["#1E7548", "#144F31"]
   };
+  // Any region not in the hand-authored palette above (i.e. a user-created one)
+  // gets the next color in the same 10-color rotation, keyed by its position —
+  // exactly the pattern the built-in countries already follow.
+  DATA.regions.forEach(function(r, i){
+    if(!REGION_GRADIENTS[r.id]) REGION_GRADIENTS[r.id] = PALETTE_CYCLE[i % PALETTE_CYCLE.length];
+  });
   var REGION_COLORS = {};
   Object.keys(REGION_GRADIENTS).forEach(function(k){ REGION_COLORS[k] = REGION_GRADIENTS[k][0]; });
   var REGION_STAMP = {};
-  DATA.regions.forEach(function(r){ REGION_STAMP[r.id] = r.flag; });
+  DATA.regions.forEach(function(r){ REGION_STAMP[r.id] = r.flag || "🍽️"; });
   var PROTEIN_META = {
     chicken:{label:"Chicken", icon:"🐔"}, fish:{label:"Fish & Seafood", icon:"🐟"},
     beef:{label:"Beef", icon:"🐄"}, pork:{label:"Pork", icon:"🐖"},
@@ -778,9 +916,10 @@
     legume:["legume","legumes","lentil","lentils","dal","chickpea","chickpeas","bean","beans","sprout","sprouts","tofu"],
     veg:["veg","veggie","veggies","vegetable","vegetables","vegetarian","plant-based","salad"]
   };
-  var APP_VERSION = "1.20";
-  var CURRENT_BATCH = 8;
+  var APP_VERSION = "1.22";
+  var CURRENT_BATCH = 9;
   var UPDATES = [
+    {batch:9, date:"2 Sep 2026, 10:00 AM", title:"10 new beef & chicken recipes, worldwide", body:"Korea: LA Galbi (Korean BBQ Beef Short Ribs). Italy: Short Rib Ragu. Mexico: Backyard Carne Asada. Vietnam: Pho Bo. China: Beef and Broccoli. Lebanon: Beef Kafta. Japan: Chicken Karaage. Philippines: Killer Chicken Adobo. Greece: Chicken Souvlaki. Spain: Spanish Garlic Chicken."},
     {batch:8, date:"1 Sep 2026, 4:10 PM", title:"Kenya expanded — meat, corn and kale dishes", body:"Two new Kenya chefs: Irio (mashed corn, peas, potatoes and greens) from Mayuri Patel, and a full Kenyan plate — Beef Stew, Ugali and Sukuma — from Samson Wagacha (Dinner DeeAs)."},
     {batch:7, date:"1 Sep 2026, 12:00 PM", title:"South Africa and Kenya join the atlas", body:"Two new countries, each with a debut chef and 2 recipes. South Africa: Chakalaka and Traditional Cape Malay Bobotie (Charlé Visser). Kenya: Chili Lemon Garlic Tilapia and Chili Cumin Coconut Milk Yellow Bean Stew (Kaluhi's Kitchen)."},
     {batch:6, date:"30 Aug 2026, 6:20 PM", title:"Japan — one new recipe from Namiko Chen", body:"Added Tonjiru (Pork and Vegetable Miso Soup) — lean pork simmered with root vegetables in a savory miso broth. Look for Japan's pulsing tile on Home."},
@@ -1061,7 +1200,9 @@
   function renderHome(){
     var q = state.query.trim();
     var visible = DATA.regions.filter(function(r){
-      return regionMatchesQuery(r, q) && regionHasTag(r, state.activeTag) && regionHasMode(r, state.mode);
+      // While actively searching, ignore the Healthy/Rich tab so a real match
+      // never gets hidden just because it lives on the other tab.
+      return regionMatchesQuery(r, q) && regionHasTag(r, state.activeTag) && (q ? true : regionHasMode(r, state.mode));
     });
     els.regionCount.textContent = visible.length + " of " + DATA.regions.length;
 
@@ -1131,7 +1272,9 @@
     region.chefs.forEach(function(chef){
       if(state.activeChef && chef.name !== state.activeChef) return;
       chef.videos.forEach(function(video){
-        if(!videoMatchesMode(video, state.mode)) return;
+        // While actively searching, ignore the Healthy/Rich tab so a real match
+        // never gets hidden just because it lives on the other tab.
+        if(!q && !videoMatchesMode(video, state.mode)) return;
         if(state.activeTag !== "all" && video.tag !== state.activeTag) return;
         if(!queryMatchesVideo(video, chef, q)) return;
         cards.push({chef:chef, video:video});
@@ -1518,6 +1661,10 @@
   document.addEventListener("keydown", function(e){
     if(e.key === "Escape" && els.modalBackdrop.classList.contains("open")) closeVideo();
     if(e.key === "Escape" && els.noteBackdrop && els.noteBackdrop.classList.contains("open")) closeNoteEditor();
+    if(e.key === "Escape"){
+      var arBackdrop = document.getElementById("addRecipeBackdrop");
+      if(arBackdrop && arBackdrop.classList.contains("open")) arBackdrop.classList.remove("open");
+    }
   });
 
   function initStats(){
@@ -1578,6 +1725,168 @@
     });
   }
 
+  /* ---------- Add-a-recipe / add-a-region (stored on this device only) ---------- */
+  function assignRegionAppearance(regionId, flag){
+    if(!REGION_GRADIENTS[regionId]){
+      REGION_GRADIENTS[regionId] = PALETTE_CYCLE[DATA.regions.length % PALETTE_CYCLE.length];
+    }
+    REGION_COLORS[regionId] = REGION_GRADIENTS[regionId][0];
+    REGION_STAMP[regionId] = flag || "🍽️";
+  }
+  function parseYouTubeId(input){
+    input = (input || "").trim();
+    if(/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
+    var m = input.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+  function initAddRecipeControl(){
+    var backdrop = document.getElementById("addRecipeBackdrop");
+    var regionSelect = document.getElementById("arRegionSelect");
+    var newRegionFields = document.getElementById("arNewRegionFields");
+    var regionNameInp = document.getElementById("arRegionName");
+    var regionFlagInp = document.getElementById("arRegionFlag");
+    var regionTaglineInp = document.getElementById("arRegionTagline");
+    var chefNameInp = document.getElementById("arChefName");
+    var chefChannelInp = document.getElementById("arChefChannel");
+    var videoUrlInp = document.getElementById("arVideoUrl");
+    var titleInp = document.getElementById("arTitle");
+    var noteInp = document.getElementById("arNote");
+    var proteinSelect = document.getElementById("arProtein");
+    var tagSelect = document.getElementById("arTag");
+    var msg = document.getElementById("arMsg");
+    var cancelBtn = document.getElementById("arCancelBtn");
+    var saveBtn = document.getElementById("arSaveBtn");
+    var flagAutoFilled = false;
+
+    // Auto-detect the real national flag as soon as the typed name matches a
+    // recognized country — same as every built-in tile. The flag field stays
+    // editable so a manual pick (or a made-up region name) always wins.
+    regionNameInp.addEventListener("input", function(){
+      var detected = flagForCountryName(regionNameInp.value);
+      if(detected && (regionFlagInp.value === "" || flagAutoFilled)){
+        regionFlagInp.value = detected;
+        flagAutoFilled = true;
+      } else if(!detected && flagAutoFilled){
+        regionFlagInp.value = "";
+        flagAutoFilled = false;
+      }
+    });
+    regionFlagInp.addEventListener("input", function(){ flagAutoFilled = false; });
+    var regionTriggerBtn = document.getElementById("regionAddRecipeBtn");
+    var settingsTriggerBtn = document.getElementById("settingsAddRecipeBtn");
+    if(!backdrop || !regionSelect) return;
+
+    if(!proteinSelect.options.length){
+      Object.keys(PROTEIN_META).forEach(function(key){
+        var opt = document.createElement("option");
+        opt.value = key; opt.textContent = PROTEIN_META[key].icon + " " + PROTEIN_META[key].label;
+        proteinSelect.appendChild(opt);
+      });
+    }
+    if(!tagSelect.options.length){
+      Object.keys(TAG_META).forEach(function(key){
+        var opt = document.createElement("option");
+        opt.value = key; opt.textContent = TAG_META[key].label;
+        tagSelect.appendChild(opt);
+      });
+    }
+
+    function populateRegions(preselectId){
+      regionSelect.innerHTML = "";
+      DATA.regions.forEach(function(r){
+        var opt = document.createElement("option");
+        opt.value = r.id; opt.textContent = (r.flag || "🍽️") + " " + r.name;
+        regionSelect.appendChild(opt);
+      });
+      var newOpt = document.createElement("option");
+      newOpt.value = "__new__"; newOpt.textContent = "+ Create a new country";
+      regionSelect.appendChild(newOpt);
+      regionSelect.value = (preselectId && DATA.regions.some(function(r){ return r.id === preselectId; })) ? preselectId : DATA.regions[0].id;
+      newRegionFields.hidden = (regionSelect.value !== "__new__");
+    }
+    regionSelect.addEventListener("change", function(){
+      newRegionFields.hidden = (regionSelect.value !== "__new__");
+    });
+
+    function showMsg(text, ok){
+      msg.textContent = text;
+      msg.className = "form-msg show " + (ok ? "ok" : "err");
+    }
+    function openModal(preselectId){
+      msg.className = "form-msg";
+      msg.textContent = "";
+      populateRegions(preselectId);
+      regionNameInp.value = ""; regionFlagInp.value = ""; regionTaglineInp.value = "";
+      chefNameInp.value = ""; chefChannelInp.value = ""; videoUrlInp.value = "";
+      titleInp.value = ""; noteInp.value = "";
+      proteinSelect.value = "chicken"; tagSelect.value = "meat";
+      flagAutoFilled = false;
+      backdrop.classList.add("open");
+    }
+    function closeModal(){ backdrop.classList.remove("open"); }
+
+    if(regionTriggerBtn) regionTriggerBtn.addEventListener("click", function(){ openModal(state.regionId); });
+    if(settingsTriggerBtn) settingsTriggerBtn.addEventListener("click", function(){ openModal(null); });
+    cancelBtn.addEventListener("click", closeModal);
+    backdrop.addEventListener("click", function(e){ if(e.target === backdrop) closeModal(); });
+
+    saveBtn.addEventListener("click", function(){
+      var videoId = parseYouTubeId(videoUrlInp.value);
+      var isNewRegion = regionSelect.value === "__new__";
+      var targetRegionId = regionSelect.value;
+
+      if(isNewRegion){
+        var newName = regionNameInp.value.trim();
+        var newTagline = regionTaglineInp.value.trim();
+        var newFlag = regionFlagInp.value.trim();
+        if(!newName){ showMsg("Please name your new country.", false); return; }
+        if(!newTagline){ showMsg("Please add a short tagline for the country.", false); return; }
+      }
+      if(!chefNameInp.value.trim() || !chefChannelInp.value.trim()){ showMsg("Please add a chef/cook name and channel.", false); return; }
+      if(!videoId){ showMsg("Couldn't find a valid YouTube video ID in that link.", false); return; }
+      if(!titleInp.value.trim()){ showMsg("Please add a recipe title.", false); return; }
+
+      if(isNewRegion){
+        var newId = slugify(regionNameInp.value.trim());
+        assignRegionAppearance(newId, regionFlagInp.value.trim());
+        DATA.regions.push({id:newId, name:regionNameInp.value.trim(), flag:regionFlagInp.value.trim() || "🍽️", tagline:regionTaglineInp.value.trim(), chefs:[], custom:true});
+        var customRegions = loadCustomRegions();
+        customRegions.push({id:newId, name:regionNameInp.value.trim(), flag:regionFlagInp.value.trim() || "🍽️", tagline:regionTaglineInp.value.trim()});
+        persistCustomRegions(customRegions);
+        targetRegionId = newId;
+      }
+
+      var region = DATA.regions.find(function(r){ return r.id === targetRegionId; });
+      if(!region){ showMsg("Something went wrong finding that country.", false); return; }
+      var chef = region.chefs.find(function(c){ return c.name === chefNameInp.value.trim() && c.channel === chefChannelInp.value.trim(); });
+      if(!chef){
+        chef = {name: chefNameInp.value.trim(), channel: chefChannelInp.value.trim(), videos:[]};
+        region.chefs.push(chef);
+      }
+      var videoObj = {
+        id: videoId,
+        title: titleInp.value.trim(),
+        note: noteInp.value.trim() || "Added by you",
+        tag: tagSelect.value,
+        protein: proteinSelect.value,
+        batch: CURRENT_BATCH
+      };
+      chef.videos.push(videoObj);
+
+      var customVideos = loadCustomVideos();
+      customVideos.push({regionId: targetRegionId, chefName: chef.name, chefChannel: chef.channel, video: videoObj});
+      persistCustomVideos(customVideos);
+
+      closeModal();
+      state.regionId = targetRegionId;
+      state.activeChef = null;
+      state.view = "region";
+      renderRegion();
+      switchView("region");
+      window.scrollTo({top:0, behavior:"instant"});
+    });
+  }
+
   /* ---------- Updates (bell icon on bottom nav) ---------- */
   function updatesUnread(){
     return UPDATES.some(function(u){ return u.batch > seenBatch; });
@@ -1606,6 +1915,7 @@
   initStats();
   initUpdatesBadge();
   initSettingsUI();
+  initAddRecipeControl();
   renderAllTagFilters();
   renderHome();
 })();
