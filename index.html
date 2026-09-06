@@ -310,6 +310,23 @@
     background:var(--chili); box-shadow:0 0 0 2px var(--card);
   }
 
+  /* ---------- "New Update Available" flash near Refresh nav button ---------- */
+  .refresh-flash{
+    position:absolute; bottom:100%; left:50%; transform:translateX(-50%); margin-bottom:8px;
+    white-space:nowrap; background:#0B63F6; color:#fff; font-family:'Nunito', sans-serif;
+    font-weight:800; font-size:10.5px; letter-spacing:0.1px; padding:5px 10px; border-radius:8px;
+    box-shadow:0 4px 14px rgba(11,99,246,0.45); pointer-events:none; z-index:30;
+    animation:flashNewText 1.3s ease-in-out infinite;
+  }
+  .refresh-flash::after{
+    content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:#0B63F6;
+  }
+  .refresh-flash[hidden]{ display:none; }
+  @media (prefers-reduced-motion: reduce){
+    .refresh-flash{ animation:none; }
+  }
+
   /* ---------- Persistent search bar ---------- */
   .search-bar-wrap{padding-bottom:6px;}
 
@@ -725,6 +742,7 @@
     <span class="nav-badge" id="updatesDot" hidden></span>
   </button>
   <button class="nav-item" id="refreshBtn" title="Refresh app to latest version" aria-label="Refresh app">
+    <span class="refresh-flash" id="refreshFlash" hidden>New Update Available</span>
     <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></span>
     <span>Refresh</span>
     <span class="nav-badge" id="refreshDot" hidden></span>
@@ -932,9 +950,10 @@
     legume:["legume","legumes","lentil","lentils","dal","chickpea","chickpeas","bean","beans","sprout","sprouts","tofu"],
     veg:["veg","veggie","veggies","vegetable","vegetables","vegetarian","plant-based","salad"]
   };
-  var APP_VERSION = "1.26";
+  var APP_VERSION = "1.27";
   var CURRENT_BATCH = 11;
   var UPDATES = [
+    {batch:11, date:"6 Sep 2026, 1:00 PM", title:"Clearer new-version alert by Refresh", body:"A bright blue \"New Update Available\" flash now appears right above the Refresh button whenever a newer version is ready, alongside the existing red badge dot — so it's obvious there's something to refresh."},
     {batch:11, date:"2 Sep 2026, 6:24 PM", title:"Peru joins the atlas", body:"New country: Peru (Ceviche, Aji de Gallina and Lomo Saltado, all from Abelca) — bringing the Americas tab to 4 countries."},
     {batch:10, date:"2 Sep 2026, 8:30 PM", title:"New cooking-style categories: Grilled, Baked, Curries, Fried", body:"Healthy Picks now has Grilled and Baked alongside Low-carb, Complex-carb, Veg-forward, Seafood and Lean meat. Rich & Indulgent now has Curries and Fried alongside the original Rich & Indulgent tag. New recipes going forward will be tagged into these cooking-style categories."},
     {batch:10, date:"2 Sep 2026, 6:00 PM", title:"16 new countries, plus continent tabs", body:"Home now has continent tabs (Americas, Europe, Middle East, Africa, Asia, Oceania). New countries: Australia (Pavlova), New Zealand (Pikelets), UK (Fish & Chips), Scotland (Cullen Skink), Ireland (Irish Stew), Switzerland (Rösti), Bosnia (Burek), Slovenia (Potica), Syria (Kibbeh), Jordan (Mansaf), UAE (Chicken Machboos), Saudi Arabia (Kabsa), Morocco (Chicken Tagine), Croatia (Cevapi) and Portugal (Piri Piri Chicken) join Palestine in the Middle East tab. Also added: a written-recipe link icon on cards where one exists, and a new Lamb protein filter."},
@@ -1763,6 +1782,7 @@
   function initRefreshControl(){
     var LAST_SEEN_KEY = "kitchenatlas.lastSeenVersion";
     var dot = document.getElementById("refreshDot");
+    var flash = document.getElementById("refreshFlash");
     var btn = document.getElementById("refreshBtn");
     var toast = document.getElementById("versionToast");
     var toastRefreshBtn = document.getElementById("versionToastRefresh");
@@ -1772,11 +1792,13 @@
     var isStale = (lastSeen !== APP_VERSION);
     if(dot) dot.hidden = !isStale;
     // A first-ever visit (no lastSeen at all) isn't "stale" content, just a first load.
+    if(flash) flash.hidden = !(isStale && lastSeen);
     if(toast) toast.hidden = !(isStale && lastSeen);
 
     function forceRefresh(){
       try{ localStorage.setItem(LAST_SEEN_KEY, APP_VERSION); }catch(e){}
       if(dot) dot.hidden = true;
+      if(flash) flash.hidden = true;
       if(toast) toast.hidden = true;
       var url = location.pathname + "?refresh=" + Date.now();
       location.href = url;
